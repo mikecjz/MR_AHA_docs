@@ -1,0 +1,151 @@
+# Python
+
+```bash
+cmake -S . -B build -DMR_AHA_BUILD_PYTHON=ON && cmake --build build -j
+pip install -e python
+pip install cupy-cuda12x        # match your CUDA toolkit
+```
+
+```python
+import mr_aha
+
+cfg = mr_aha.make_config("stack", (320, 320, 56), L=16, n_coils=12)
+
+with mr_aha.create_op(cfg, SEs, phi2, traj) as op:   # kernel computed here
+    for _ in range(n_iter):
+        y = op(x)
+```
+
+On Apple silicon the arrays are NumPy arrays instead of CuPy arrays (see
+[Apple silicon](../guide/apple-silicon.md)); everything else is the same. Shapes are the reverse
+of the [array-shape table](../guide/conventions.md#array-shapes), because CuPy and NumPy are row-major: `x` is `(L, Nz, Ny, Nx)`,
+`SEs` is `(Ncoils, Nz, Ny, Nx)`, `traj` is `(ndim, Nkx, Ntrajs)`, and so on; see
+[Array layout](#array-layout) below.
+
+Masked operator, NUFFT method, and the NUFFT reference (`pip install cufinufft`):
+
+```python
+cfg  = mr_aha.make_config("3D", (160, 160, 160), L=12, n_coils=12, is_masked=True)
+mask = mr_aha.calc_mask(cfg, traj)
+op   = mr_aha.create_op(cfg, SEs, phi2, traj, mask)      # also sets cfg.num_masked
+
+cfg_nu = mr_aha.make_config("3D", (160, 160, 160), L=12, n_coils=12)
+op_nu  = mr_aha.create_op(cfg_nu, SEs, phi2, traj, method="nufft")
+
+with mr_aha.AhANufftPlan(cfg_nu, traj) as ref:           # independent reference
+    y_ref = ref.apply(x, SEs, phi2)
+```
+
+The stateless single-GPU primitives remain: `mr_aha.calc_toep(cfg, phi2, traj, mask)` and
+`mr_aha.aha_toeplitz(cfg, x, SEs, phi2_toep, mask)`.
+
+## Array layout
+
+The library documents arrays in **column-major** (MATLAB) order. NumPy and CuPy
+are row-major, so every shape is reversed here — the memory layout is identical
+and no data is ever moved.
+
+| column-major (docs)          | row-major (this package)   |
+| ---------------------------- | -------------------------- |
+| `x[Nx, Ny, Nz, L]`           | `x[L, Nz, Ny, Nx]`         |
+| `SEs[Nx, Ny, Nz, Nc]`        | `SEs[Nc, Nz, Ny, Nx]`      |
+| `phi2_toep[Mx, My, Mz, T]`   | `phi2_toep[T, Mz, My, Mx]` |
+| `phi2[Ntrajs, L, L]`         | `phi2[L, L, Ntrajs]`       |
+| `phi2[Ntrajs, Nkz, L, L]`    | `phi2[L, L, Nkz, Ntrajs]`  |
+| `traj[Ntrajs, Nkx, ndim]`    | `traj[ndim, Nkx, Ntrajs]`  |
+| `mask_kernel[Mx, My, Mz]`    | `mask_kernel[Mz, My, Mx]`  |
+
+**Gram blocks** follow MR-Multitasking: `phi2` holds `Phi_rt(:,idx) * Phi_rt(:,idx)'`
+of the rank x time basis, and every block multiplies the rank coefficients of a
+k-space location as a row vector from the right (`k * Phi2`). With row-major
+`phi2[a, b, ...]` holding column-major entry `(b, a)`, that is
+`out[l] = sum_m phi2[l, m] * v[m]`. A MR-Multitasking `Phi2` read with h5py,
+row-major `(Nz, Ntrajs, L, L)`, is passed as `P.transpose(2, 3, 0, 1)` (plus an
+`fftshift` along kz if it is in natural order). See
+[Gram blocks](../guide/conventions.md#gram-blocks-mr-multitasking-convention).
+
+## Usage
+
+One object, `AhAOp`, created from the Gram blocks, the trajectory and the
+sensitivity maps with `mr_aha.create_op` (or `mr_aha.AhAOp.create_op`), then
+applied as often as needed:
+
+```python
+import cupy as cp
+import mr_aha
+
+cfg = mr_aha.make_config("stack", (256, 256, 64), L=16, n_coils=8)
+
+with mr_aha.create_op(cfg, SEs, phi2, traj) as op:  # kernel computed here
+    for _ in range(n_iter):
+        y = op(x)                                    # or op.apply(x, out=y)
+    print(op.info)                                   # method, devices, timings
+```
+
+Options of `create_op`:
+
+| argument | default | meaning |
+| --- | --- | --- |
+| `method` | `"toeplitz"` | `"toeplitz"`: the kernel `phi2_toep` is computed at creation, every application is FFT + block-diagonal multiplication. `"nufft"`: every application runs a type-2 NUFFT, the Gram multiplication on the samples and a type-1 NUFFT per coil (cufinufft, inside the library); no kernel, much less memory, slower per application. |
+| `devices` | `None` | `None`: the current GPU only. `"all"`: every visible GPU. A list of CUDA ordinals: those GPUs (the current one always takes part). Coils are split over the GPUs. |
+| `toep_dist` | `"auto"` | Toeplitz on several GPUs: how every GPU gets the kernel — `"split"` (each computes a share, shares exchanged), `"replicate"` (each computes all of it), `"broadcast"` (one computes, copies to the others), `"auto"` (cost model). |
+| `share_primary` | `True` | Use `SEs` (and `mask`) in place instead of copying them; do not modify them in place while the operator is open. |
+| `nufft_opts` | `None` | `method="nufft"`: `{"upsampfac": 2.0, "gpu_method": 0}`. |
+
+`op.kernel(k)` returns a read-only view of the Toeplitz kernel the operator
+holds on its `k`-th GPU (e.g. to save it).
+
+Masked operators keep `phi2_toep` only at selected upsampled k-space samples
+(Toeplitz method only). `calc_mask` derives them from the trajectory. By
+default it keeps every grid location within `mask_radius=2` cells of a sample.
+With `mask_method="threshold"` it thresholds the unit-weight Toeplitz kernel at
+`mask_threshold` (absolute, in samples, default 0.05) instead. Per call,
+`calc_mask(cfg, traj, radius=...)` or `threshold=...` overrides the configured
+method:
+
+```python
+cfg  = mr_aha.make_config("stack", (256, 256, 64), L=16, n_coils=8, is_masked=True)
+mask = mr_aha.calc_mask(cfg, traj)                   # or your own indices
+op   = mr_aha.create_op(cfg, SEs, phi2, traj, mask)  # fills cfg.num_masked
+```
+
+`mask` holds **0-based** linear indices into the centred upsampled grid.
+
+### Low-level primitives
+
+`mr_aha.calc_toep(cfg, phi2, traj, mask)` computes the kernel on the current
+GPU and `mr_aha.aha_toeplitz(cfg, x, SEs, phi2_toep, mask)` applies it once
+(stateless; it allocates its buffers on every call). They are what the
+Toeplitz operator does internally on one GPU.
+
+## Several GPUs (CUDA)
+
+```python
+with mr_aha.create_op(cfg, SEs, phi2, traj, devices=[0, 1, 2, 3]) as op:
+    for _ in range(n_iter):
+        y = op(x)     # x and y on the current CuPy device
+    print(op.info)    # devices used, coils per device, how the kernel was made
+```
+
+Every GPU applies its own coils and the partial results are summed on the
+current CuPy device. With the Toeplitz method every GPU holds the whole
+kernel, computed in parallel by the GPUs (`toep_dist`); with the NUFFT method
+every GPU holds its own NUFFT plans. The library may use fewer GPUs than given
+(the smallest number with the same coils per GPU) and keeps small problems on
+one GPU. See [Multi-GPU](../guide/multi-gpu.md).
+
+## NUFFT reference
+
+`mr_aha.AhANufftPlan` evaluates the same operator with type-2 / type-1
+cufinufft transforms instead of the Toeplitz embedding (pure CuPy + the
+`cufinufft` package, no MR_AHA C code). It is the **independent reference**
+the tests validate both methods of `create_op` against (`method="nufft"` runs
+the same algorithm inside the library); use `create_op` for reconstructions. It needs `pip install cufinufft`, and
+the cufinufft wheel expects `libcudart.so.12` on the library path (load your
+CUDA module or install `nvidia-cuda-runtime-cu12`).
+
+```python
+with mr_aha.AhANufftPlan(cfg, traj, type1_opts={"gpu_method": 1},
+                         type2_opts={"gpu_method": 2}) as ref:
+    y_ref = ref.apply(x, SEs, phi2)    # agrees with create_op(...)(x) to ~1e-6
+```

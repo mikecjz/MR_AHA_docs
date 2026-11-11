@@ -1,0 +1,6 @@
+# Build output and pages generated at build time
+_build/
+source/api/matlab/
+source/api/python/
+doxygen/
+__pycache__/

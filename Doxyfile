@@ -1,0 +1,24 @@
+# Doxygen configuration for the C API reference of MR_AHA.
+#
+# Only XML is produced; Sphinx (Breathe) turns it into the "C API" page.
+# source/conf.py runs Doxygen with INPUT and OUTPUT_DIRECTORY appended, so
+# this file holds only the settings that do not depend on paths.
+PROJECT_NAME           = "MR_AHA"
+FILE_PATTERNS          = *.h
+RECURSIVE              = NO
+GENERATE_HTML          = NO
+GENERATE_LATEX         = NO
+GENERATE_XML           = YES
+XML_PROGRAMLISTING     = NO
+EXTRACT_ALL            = YES
+EXTRACT_STATIC         = NO
+JAVADOC_AUTOBRIEF      = YES
+OPTIMIZE_OUTPUT_FOR_C  = YES
+ENABLE_PREPROCESSING   = YES
+MACRO_EXPANSION        = YES
+EXPAND_ONLY_PREDEF     = YES
+# The export and alignment attributes are not part of the documented
+# signatures. ":=" keeps the header's own #define from replacing these.
+PREDEFINED             = "MR_EXPORT:=" "MR_ALIGN8:="
+QUIET                  = YES
+WARN_IF_UNDOCUMENTED   = NO
