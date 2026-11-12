@@ -1,18 +1,40 @@
 # The operations
 
-## `create_op` — the operator object
+The library offers its operations at two levels:
 
+* **Packaged operation.** `create_op` builds the complete $A^H A$ operator once, and the object
+  it returns is then applied as often as needed. It computes the kernel, keeps the sensitivity
+  maps and every working buffer, and can be multi-GPU. Use it for reconstructions.
+* **Standalone operations.** `calc_toep`, `AhA_Toeplitz` and `calc_mask` are the individual
+  steps the packaged operator is built from, each available on its own. They are stateless and
+  single-GPU: every call takes all its inputs and allocates its own buffers. Use them to inspect
+  or save the kernel, or to build a pipeline of your own.
+
+## Packaged operation: `create_op` and apply
+
+::::{tab-set-code}
+
+```python
+op = mr_aha.create_op(cfg, SEs, phi2, traj, ...)
+AhAx = op(x)
 ```
-op   = mr_aha.create_op(SEs, phi2, traj, config, ...)       % MATLAB
-op   = mr_aha.create_op(cfg, SEs, phi2, traj, ...)             # Python
-       mr_op_create(&cfg, &inputs, &options, &op)              /* C */
-AhAx = op * x  /  op(x)  /  mr_op_execute(op, d_x, d_AhAx)
+
+```matlab
+op = mr_aha.create_op(SEs, phi2, traj, config, ...);
+AhAx = op * x;
 ```
+
+```c
+mr_op_create(&cfg, &inputs, &options, &op);
+mr_op_execute(op, d_x, d_AhAx);
+```
+
+::::
 
 `create_op` builds the one stateful object of the library: the complete operator
 $x \mapsto A^H A x$. It is built once from the Gram blocks, the trajectory and the sensitivity
-maps, then applied as often as an iterative reconstruction needs. Two methods evaluate the same
-operator:
+maps. Applying it then takes only $x$, as often as an iterative reconstruction needs. Two methods
+evaluate the same operator:
 
 * `method = 'toeplitz'` (default). The kernel `phi2_toep` is computed at creation
   ([`calc_toep`](#calc_toep--one-off-pre-computation)), and every application is the Toeplitz
@@ -23,15 +45,32 @@ operator:
   memory, and takes longer per application. It is the baseline the Toeplitz method is compared
   against.
 
-By default the operator runs on the current GPU, at the same cost as the single-GPU primitives
+By default the operator runs on the current GPU, at the same cost as the standalone operations
 below. `devices` makes it multi-GPU on one node, with the coils split over the GPUs; see
 [Multi-GPU](multi-gpu.md).
 
-## `calc_toep` — one-off pre-computation
+## Standalone operations
 
+Each of these runs once, on the current GPU, and keeps nothing between calls.
+
+### `calc_toep` — one-off pre-computation
+
+::::{tab-set-code}
+
+```python
+phi2_toep = mr_aha.calc_toep(cfg, phi2, traj)          # unmasked
+phi2_toep = mr_aha.calc_toep(cfg, phi2, traj, mask)    # masked
 ```
-phi2_toep = calc_toep(phi2, traj, config)
+
+```matlab
+phi2_toep = calc_toep(phi2, traj, config);
 ```
+
+```c
+mr_calc_toep(&cfg, d_phi2, d_traj, Ntrajs, Nkx, d_mask, d_phi2_toep);
+```
+
+::::
 
 `calc_toep` turns the non-Cartesian Gram blocks $\Phi_2 = \Phi\Phi^H$ into the Cartesian
 block-diagonal multiplier used by the operator. There is one $L \times L$ Gram block per
@@ -43,8 +82,7 @@ trajectory (`Phi_rt(:,idx) * Phi_rt(:,idx)'`, see
 3. centred inverse FFT;
 4. optional mask gather.
 
-`calc_toep` is a stateless, single-GPU primitive. The Toeplitz operator calls it internally. A
-multi-GPU operator spreads the $(L^2+L)/2$ independent triangular components over the
+The packaged Toeplitz operator calls `calc_toep` internally. A multi-GPU operator spreads the $(L^2+L)/2$ independent triangular components over the
 GPUs; see [Multi-GPU](multi-gpu.md).
 
 > **Experimental: NUFFT settings of `calc_toep`.** Two environment variables, read when the
@@ -62,12 +100,25 @@ GPUs; see [Multi-GPU](multi-gpu.md).
 > switches are for benchmarking and may change; see
 > [NUFFT upsampling factor](../benchmarks/upsampfac.md) for the measurements.
 
-## `AhA_Toeplitz` — the hot loop
+### `AhA_Toeplitz` — the hot loop
 
+::::{tab-set-code}
+
+```python
+AhAx = mr_aha.aha_toeplitz(cfg, x, SEs, phi2_toep)
+AhAx = mr_aha.aha_toeplitz(cfg, x, SEs, phi2_toep, mask)
 ```
-AhAx = AhA_Toeplitz(x, SEs, phi2_toep, config)
-AhAx = AhA_Toeplitz(x, SEs, phi2_toep, config, mask)
+
+```matlab
+AhAx = AhA_Toeplitz(x, SEs, phi2_toep, config);
+AhAx = AhA_Toeplitz(x, SEs, phi2_toep, config, mask);
 ```
+
+```c
+mr_aha_toeplitz(&cfg, d_x, d_SEs, d_phi2_toep, d_mask, d_AhAx);   /* d_mask = NULL when unmasked */
+```
+
+::::
 
 For every coil:
 
@@ -80,29 +131,59 @@ For every coil:
 6. crop;
 7. multiply by the adjoint sensitivity map and accumulate.
 
-No NUFFT is evaluated here, which is the whole point of the Toeplitz embedding. `AhA_Toeplitz`
-(`mr_aha_toeplitz` in C, `aha_toeplitz` in Python) is stateless and single-GPU. The operator
-object applies the same pipeline with its buffers kept between applications.
+No NUFFT is evaluated here, which is the whole point of the Toeplitz embedding. The packaged
+operator applies the same pipeline, with its buffers kept between applications.
 
-## `calc_mask` — automatic mask for the masked operator
+### `calc_mask` — automatic mask for the masked operator
 
+::::{tab-set-code}
+
+```python
+mask = mr_aha.calc_mask(cfg, traj)
 ```
-mask = calc_mask(traj, config)
+
+```matlab
+mask = calc_mask(traj, config);
 ```
+
+```c
+mr_calc_mask(&cfg, d_traj, Ntrajs, Nkx, d_mask, &num_masked);
+```
+
+::::
 
 `calc_mask` derives the upsampled k-space locations worth keeping from the trajectory alone: it
-keeps every grid location within `config.mask_radius` (default 2) cells of a sample. See
-[Masking](masking.md).
+keeps every grid location within `config.mask_radius` (default 2) cells of a sample. A masked
+operator from MATLAB's `mr_aha.create_op` calls it when no mask is given; in Python and C, pass
+its result to `create_op`. See [Masking](masking.md).
 
-## `AhA_cufinufft` / `mr_aha.AhANufftPlan` — reference without Toeplitz
+### `AhA_cufinufft` / `mr_aha.AhANufftPlan` — reference without Toeplitz
 
+::::{tab-set-code}
+
+```python
+plan = mr_aha.AhANufftPlan(cfg, traj)          # once per trajectory
+AhAx = plan.apply(x, SEs, phi2)                # every application
 ```
-AhAx = AhA_cufinufft(x, SEs, phi2, traj, config[, plan])     % MATLAB
-y    = mr_aha.AhANufftPlan(cfg, traj).apply(x, SEs, phi2)    # Python
+
+```matlab
+plan = mr_nufft_plan(traj, config);             % once per trajectory
+AhAx = AhA_cufinufft(x, SEs, phi2, traj, config, plan);   % every application
 ```
+
+::::
 
 This is the same operator evaluated without the Toeplitz embedding, coil by coil: type-2
 cufinufft, one $L\times L$ block per readout, type-1 cufinufft. It is pure MATLAB / CuPy on top of
 finufft's own interfaces and uses no MR_AHA C code. That makes it the **independent reference**
 the tests validate both methods of the operator against (`method = 'nufft'` runs the same
 algorithm inside the library). All three agree to $\sim 10^{-6}$.
+
+**Why a plan.** A NUFFT spends part of its time on set-up that depends only on the trajectory:
+cufinufft sorts the non-uniform points into bins on its fine grid, chooses the spreading
+parameters for the requested `eps`, and allocates its work arrays. The plan does this once, for
+one type-2 and one type-1 transform, and every application then only spreads, transforms and
+interpolates. Without a plan, each call repeats the set-up: MATLAB's `AhA_cufinufft` re-plans
+and re-sorts the trajectory when no `plan` is given. Inside an iterative reconstruction,
+build the plan once and reuse it. The Toeplitz path needs no plan per application, because
+`calc_toep` uses the trajectory once and the result, `phi2_toep`, lives on a Cartesian grid.
