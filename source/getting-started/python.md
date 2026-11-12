@@ -42,14 +42,15 @@ The memory layout is identical, and no data is ever moved.
 | `phi2[Ntrajs, Nkz, L, L]`    | `phi2[L, L, Nkz, Ntrajs]`  |
 | `traj[Ntrajs, Nkx, ndim]`    | `traj[ndim, Nkx, Ntrajs]`  |
 
-**Gram blocks** follow MR-Multitasking. `phi2` holds `Phi_rt(:,idx) * Phi_rt(:,idx)'` of the
+**Gram blocks.** `phi2` holds `Phi_rt(:,idx) * Phi_rt(:,idx)'` of the
 rank x time basis, and every block multiplies the rank coefficients of a k-space location as a
 row vector from the right (`k * Phi2`). Row-major `phi2[a, b, ...]` holds the column-major entry
 `(b, a)`, so that is `out[l] = sum_m phi2[l, m] * v[m]`.
 
-A MR-Multitasking `Phi2` read with h5py is row-major `(Nz, Ntrajs, L, L)`. Pass it as
+A MATLAB `Phi2` stored as `[L, L, Ntrajs, Nz]` and read with h5py is row-major
+`(Nz, Ntrajs, L, L)`. Pass it as
 `P.transpose(2, 3, 0, 1)`, plus an `fftshift` along kz if it is in natural order. See
-[Gram blocks](../guide/conventions.md#gram-blocks-mr-multitasking-convention).
+[Gram blocks](../guide/conventions.md#gram-blocks).
 
 ## Options of `create_op`
 

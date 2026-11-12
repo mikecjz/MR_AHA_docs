@@ -42,9 +42,9 @@ Optional: `n_coils`, `num_masked`, `eps`, `mem_fraction`, `gpu_device_id`, `verb
 `mask_radius`. The MATLAB
 helper `mr_default_config` and the Python `mr_aha.make_config` fill in sensible defaults.
 
-## Gram blocks (MR-Multitasking convention)
+## Gram blocks
 
-The library follows MR-Multitasking. The temporal basis $\Phi$ is **rank × time** (`Phi_rt`,
+The temporal basis $\Phi$ is **rank × time** (`Phi_rt`,
 `[L, T]`), the spatial coefficients keep the rank as their **last** dimension, and the Gram block of
 a readout (and kz encode) is
 
@@ -54,9 +54,9 @@ $$\Phi_2 = \sum_{t\,\in\,\text{readout}} \Phi(:,t)\,\Phi(:,t)^H, \qquad
 Every block multiplication (by `phi2` in the NUFFT reference operators, by `phi2_toep` in the
 Toeplitz operator) treats the $L$ rank coefficients of one k-space location as a **row vector
 multiplied from the right**, $v \leftarrow v\,\Phi_2$, i.e. $v_l \leftarrow \sum_m v_m (\Phi_2)_{ml}$ —
-exactly MR-Multitasking's `reshape(k, [], L) * Phi2`. Since MR-Multitasking forms $A^Hb$ as
-`k.' * Phi_rt'`, this is its normal operator, and a MR-Multitasking `Phi2` (`[L, L, Ntrajs, Nz]`)
-is passed unchanged apart from the dimension order: `permute(Phi2, [3 4 1 2])` in MATLAB, or the
+in MATLAB, `reshape(k, [], L) * Phi2`. This is the normal operator of a model whose adjoint
+applies the basis as `k.' * Phi_rt'`. Gram blocks stored as `[L, L, Ntrajs, Nz]` are passed
+unchanged apart from the dimension order: `permute(Phi2, [3 4 1 2])` in MATLAB, or the
 row-major `P.transpose(2, 3, 0, 1)` of the h5py array in Python (plus an `fftshift` along kz if it is
 in natural order).
 

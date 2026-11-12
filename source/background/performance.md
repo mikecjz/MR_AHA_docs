@@ -47,7 +47,7 @@ extra synchronisation). With the generic kernels, on the TITAN RTX and the stack
 
 The block-diagonal stage is the one to design for. At every upsampled k-space location it
 multiplies the length-$L$ row vector of rank coefficients from the right by a Hermitian
-$L \times L$ block ($v \leftarrow v\,B$, the MR-Multitasking convention). The block is stored in
+$L \times L$ block ($v \leftarrow v\,B$; see [Gram blocks](../guide/conventions.md#gram-blocks)). The block is stored in
 `phi2_toep` as its $(L^2+L)/2$ upper or lower triangle.
 
 The stage does very little arithmetic per byte, so it is limited by memory bandwidth. The bytes

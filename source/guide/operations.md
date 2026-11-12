@@ -35,8 +35,8 @@ phi2_toep = calc_toep(phi2, traj, config)
 
 `calc_toep` turns the non-Cartesian Gram blocks $\Phi_2 = \Phi\Phi^H$ into the Cartesian
 block-diagonal multiplier used by the operator. There is one $L \times L$ Gram block per
-trajectory (MR-Multitasking's `Phi_rt(:,idx) * Phi_rt(:,idx)'`, see
-[Gram blocks](conventions.md#gram-blocks-mr-multitasking-convention)). The steps are:
+trajectory (`Phi_rt(:,idx) * Phi_rt(:,idx)'`, see
+[Gram blocks](conventions.md#gram-blocks)). The steps are:
 
 1. pack each block into a triangle;
 2. type-1 cufinufft onto the upsampled grid;
@@ -75,7 +75,7 @@ For every coil:
 2. zero-pad onto the upsampled grid;
 3. FFT;
 4. at each k-space location, multiply the rank coefficients, as a row vector from the right, by
-   that location's Hermitian $L \times L$ block ($v \leftarrow v\,B$, as MR-Multitasking does);
+   that location's Hermitian $L \times L$ block ($v \leftarrow v\,B$);
 5. inverse FFT;
 6. crop;
 7. multiply by the adjoint sensitivity map and accumulate.

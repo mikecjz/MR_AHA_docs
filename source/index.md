@@ -11,7 +11,7 @@
 ```
 
 MR_AHA evaluates the forward normal operator $A^H A$ on the GPU for **non-Cartesian MRI with
-low-rank (subspace / MR-Multitasking) modelling**, via a Toeplitz embedding: after a one-off
+low-rank (subspace) modelling**, via a Toeplitz embedding: after a one-off
 pre-computation, one application costs two FFTs per coil instead of two NUFFTs. A NUFFT-based
 operator with the same interface is included as the reference.
 

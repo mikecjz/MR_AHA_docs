@@ -25,7 +25,7 @@ with a NUFFT, once per trajectory ([Baron et al., MRM
 
 ## With a low-rank model
 
-Under MR-Multitasking the $A^H A$ operator is block-Toeplitz. It is diagonalised in the same way,
+With a low-rank (subspace) model the $A^H A$ operator is block-Toeplitz. It is diagonalised in the same way,
 except that $\Lambda$ becomes block-diagonal: one $L \times L$ block per upsampled k-space
 location. This block-diagonal multiplier is the gridded $\Phi\Phi^H$ operator, which the library
 calls `phi2_toep`.
