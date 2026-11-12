@@ -2,5 +2,6 @@
 _build/
 source/api/matlab/
 source/api/python/
+.claude/
 doxygen/
 __pycache__/
