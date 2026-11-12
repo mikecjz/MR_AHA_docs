@@ -243,7 +243,7 @@ coils are faster. Over PCIe without peer access (~4 GB/s) it keeps whole coils.
 
 A multi-GPU Toeplitz operator needs the kernel on every GPU. The operator computes it on all its
 GPUs at once: each GPU computes about $1/G$ of the kernel and receives the other $(G-1)/G$ over
-its own link. Set-up time therefore does not grow with the number of GPUs $G$.
+its own link. The kernel is therefore on every GPU sooner than one GPU could compute it alone.
 
 **Why the work splits cleanly.** The $(L^2+L)/2$ triangular components of the kernel are
 independent: each one is a type-1 NUFFT, a centred inverse FFT and a scaling. Each fills one
@@ -293,42 +293,85 @@ to the receivers in rotated order $k+1, k+2, \ldots$ $(\bmod\ G)$. Because the G
 step, the destinations form a permutation at any moment, so every GPU has about one outgoing and
 one incoming transfer. This is a ring all-gather without the forwarding. With this schedule each
 GPU receives at 14–16 GB/s on four L40S that sit on three different NUMA nodes
-(`nvidia-smi topo`: every pair `SYS`). The bandwidth probe uses the same schedule, so the cost
-model sees the bandwidth the exchange will actually get.
+(`nvidia-smi topo`: every pair `SYS`), and at about 365 GB/s on 2 or 4 H100 joined by NVLink.
+The bandwidth probe uses the same schedule, so the cost model sees the bandwidth the exchange will
+actually get.
 
-**Measured** on 4 L40S (PCIe). Synthetic inputs have the shapes of the benchmark
-problems, 12 coils each. Each figure is the median of 2 runs after a warm-up, in seconds.
+**Measured** on two systems: 4 L40S over PCIe (two pairs, each pair on its own PCIe switch, the
+pairs on different NUMA nodes) and 4 H100 with NVLink between every pair. Synthetic inputs have the
+shapes of the benchmark problems, 12 coils each. Each figure is the median of 2 runs after a
+warm-up, in seconds, L40S / H100. The fastest set-up per problem and system is in bold.
 
-| set-up (s) | 2D radial 320², $L = 72$, 8.6 GB | stack 320² × 56, $L = 12$, 14.3 GB | 3D 160³, $L = 12$, 20.5 GB |
+| set-up (s), L40S / H100 | 2D radial 320², $L = 72$, 8.6 GB | stack 320² × 56, $L = 12$, 14.3 GB | 3D 160³, $L = 12$, 20.5 GB |
 |---|---|---|---|
-| 1 GPU (`calc_toep`) | 2.03 | 2.54 | 7.90 |
-| 2 GPUs, `'split'` | 1.48 | 2.19 | 5.33 |
-| 4 GPUs, `'split'` | **1.87** | **2.49** | **4.26** |
-| 4 GPUs, `'auto'` (chose `'split'`) | 2.23 | 2.85 | 4.38 |
-| 4 GPUs, `'split'` without overlap | 2.56 | 2.81 | 4.88 |
-| 4 GPUs, `'replicate'` | 4.12 | 4.24 | 10.15 |
-| 4 GPUs, `'broadcast'` | 3.69 | 5.59 | 12.14 |
+| 1 GPU (`calc_toep`) | 2.05 / 2.16 | 2.41 / 1.93 | 7.75 / 3.97 |
+| 2 GPUs, `'split'` | **1.46** / **1.06** | **2.15** / **1.48** | 5.36 / 2.81 |
+| 4 GPUs, `'split'` | 1.82 / 1.32 | 2.40 / 1.69 | **4.20** / **2.36** |
+| 4 GPUs, `'auto'` (chose `'split'`) | 1.88 / 1.32 | 2.54 / 1.50 | 4.31 / 2.39 |
+| 4 GPUs, `'split'` without overlap | 2.22 / 1.34 | 2.86 / 1.56 | 4.60 / 2.31 |
+| 4 GPUs, `'replicate'` | 4.12 / 4.03 | 4.15 / 3.58 | 9.69 / 6.63 |
+| 4 GPUs, `'broadcast'` | 3.58 / 2.27 | 5.03 / 2.02 | 11.34 / 4.60 |
 
-- **Set-up does not grow with $G$.** Building the 4-GPU operator takes less time than `calc_toep`
-  alone on one GPU (2D 1.87 vs 2.03 s, 3D 4.26 vs 7.90 s), even though the kernel ends up on all
-  four GPUs.
-- **End to end.** Set-up plus 10 CG iterations on 4 GPUs takes 2.77 s (2D), 5.81 s (stack) and
-  8.01 s (3D).
-- **Overlap** of computation and exchange saves 0.3–0.7 s.
-- **`'auto'` costs 0.1–0.35 s more than forcing `'split'`.** That is the bandwidth probe (≈ 0.1 s)
-  plus run-to-run spread. `'auto'` chose the exchange in every case.
-- **Where the 4-GPU time goes** (2D, `'split'`):
-  - setup and pilot, 0.95 s: per GPU, input copies, cufinufft and cuFFT planning, and a pilot
-    of 165 components (0.09 s);
-  - exchange, 0.45–0.54 s: 492 more components per GPU (0.26 s) overlapped with receiving
-    6.5 GB at 14–16 GB/s;
-  - releasing the buffers, 0.05 s;
-  - building the operator's own state, ≈ 0.3 s.
+- **Faster than one GPU.** Building the 4-GPU operator, with the kernel on all four GPUs, takes
+  less time than `calc_toep` alone on one GPU, in every case.
+- **Two GPUs can set up faster than four.** In 2D and stack, 2 GPUs beat 4 on both systems, even
+  with NVLink. Going from 2 to 4 GPUs adds about 0.3 s of per-GPU set-up and saves less than that
+  in the exchange (2D, `'split'`):
+
+  | | L40S, 2 GPUs | L40S, 4 GPUs | H100, 2 GPUs | H100, 4 GPUs |
+  |---|---|---|---|---|
+  | setup and pilot | 0.66 s | 0.95 s | 0.49 s | 0.78 s |
+  | exchange | 0.59 s | 0.51 s | 0.43 s | 0.26 s |
+  | bandwidth received per GPU | 25.8 GB/s | 14.4 GB/s | 368 GB/s | 364 GB/s |
+
+  Set-up runs on all GPUs at once in one process and gets slower as more GPUs take part (see
+  `'replicate'` below). On the L40S the exchange also gains little, because each GPU receives
+  $3/4$ of the kernel instead of $1/2$, at a lower rate across NUMA nodes. In 3D each component is
+  expensive (≈ 90 ms against 0.5 ms in 2D), so halving each GPU's share outweighs the extra set-up.
+- **End to end, 4 GPUs are still fastest.** More GPUs make every CG iteration faster. Set-up plus
+  10 CG iterations, `'split'`:
+
+  | set-up + 10 CG (s), L40S / H100 | 2D | stack | 3D |
+  |---|---|---|---|
+  | 1 GPU | 5.95 / 5.68 | 10.80 / 3.65 | 19.27 / 6.68 |
+  | 2 GPUs | 3.07 / 2.75 | 6.68 / 2.46 | 11.26 / 4.14 |
+  | 4 GPUs | 2.72 / 2.17 | 5.60 / 2.25 | 8.04 / 3.09 |
+
+- **Overlap** of computation and exchange saves about 0.4 s on the L40S. With NVLink the transfer
+  takes almost no time, so the overlap makes no measurable difference.
+- **`'auto'` costs at most 0.15 s more than forcing `'split'`**, the bandwidth probe plus
+  run-to-run spread. It chose the exchange in every case above. In an earlier run on another set of
+  4 L40S, the exchange was slow (2D `'split'` 5.6 s); `'auto'` chose `'replicate'` there and took
+  3.0 s, the fastest of the three modes.
+- **`'replicate'` is slower than one GPU.** Each GPU runs the whole single-GPU computation, so all
+  of them should finish in about the single-GPU time. They do not, because the GPUs are driven by
+  threads of one process, and the threads contend inside it, for example for locks in the CUDA
+  driver and for the CPU-side work of the cuFFT and cufinufft calls. The 2D figure is the same on both systems (4.12 and 4.03 s), although
+  the H100 computes the 3D kernel twice as fast. Per-component time on the H100 rises from 0.74 ms
+  with 2 GPUs to 1.50 ms with 4 in 2D, and from 45 to 68 ms in 3D. Run as 4 separate processes
+  instead, one GPU each, the same computations finish close to the single-GPU time (H100, median of
+  5 runs):
+
+  | `calc_toep` (s), H100 | 2D | stack | 3D |
+  |---|---|---|---|
+  | 1 process, 1 GPU | 2.01 | 1.67 | 4.11 |
+  | 4 processes at once, 1 GPU each | 2.15–2.30 | 1.70–1.79 | 4.22–4.27 |
+  | 1 process, 4 GPUs (`'replicate'`) | 4.03 | 3.58 | 6.63 |
+
+  The slowdown therefore comes from the threads sharing one process, not from the GPUs or the
+  node. The same contention lengthens the set-up phase of `'split'`.
+- **Where the 4-GPU time goes** (2D, `'split'`, L40S / H100):
+  - setup and pilot, 0.95 / 0.78 s: per GPU, input copies, cufinufft and cuFFT planning, and a
+    pilot of 165 components (≈ 0.09 s);
+  - exchange, 0.51 / 0.26 s: 492 more components per GPU (≈ 0.26 s) overlapped with receiving
+    6.5 GB;
+  - releasing the buffers, 0.05 / 0.01 s;
+  - building the operator's own state, ≈ 0.26 s on both.
 
   Planning is the largest part.
 - **Tuning tip: a smaller chunk also helps a single GPU.** With `MR_AHA_TOEP_MAX_CHUNK=128`,
-  single-GPU `calc_toep` drops from 2.03 to 1.55 s for 2D $L = 72$ (smaller buffers and plans).
-  The stack and 3D problems are unaffected.
+  single-GPU `calc_toep` for 2D $L = 72$ drops from 2.05 to 1.53 s on the L40S and from 2.16 to
+  1.30 s on the H100 (smaller buffers and plans). The 3D problem is unaffected.
 
 
 ### 3.5 The NUFFT method of the operator

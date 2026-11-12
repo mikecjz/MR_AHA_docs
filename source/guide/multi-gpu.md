@@ -89,17 +89,19 @@ The Toeplitz operator computes its kernel on all its GPUs at once:
    about one transfer at a time.
 
 Each GPU thus computes about $1/G$ of the kernel and receives the other $(G-1)/G$ over its own
-link, so the set-up time does not grow with the number of GPUs. Every component is computed once,
-so the copies on all GPUs are bit-identical.
+link, so the kernel is on every GPU sooner than one GPU could compute it alone. Every component is
+computed once, so the copies on all GPUs are bit-identical.
 
-Measured on 4 L40S over PCIe:
+Measured on 4 L40S over PCIe and on 4 H100 with NVLink:
 
-| problem | kernel | `calc_toep` on 1 GPU | operator set-up on 4 GPUs |
+| problem | kernel | `calc_toep` on 1 GPU (L40S / H100) | operator set-up on 4 GPUs (L40S / H100) |
 |---|---|---|---|
-| 2D radial 320², L = 72 | 8.6 GB | 2.0 s | 1.9 s |
-| 3D kooshball 160³, L = 12 | 20.5 GB | 7.9 s | 4.3 s |
+| 2D radial 320², L = 72 | 8.6 GB | 2.1 s / 2.2 s | 1.8 s / 1.3 s |
+| 3D kooshball 160³, L = 12 | 20.5 GB | 7.7 s / 4.0 s | 4.2 s / 2.4 s |
 
-The 4-GPU figure includes the kernel on every GPU.
+The 4-GPU figure includes the kernel on every GPU. For problems with many cheap components (2D,
+stack of stars), set-up on 2 GPUs is faster than on 4, although 4 GPUs still give the shortest
+reconstruction overall.
 [The performance notes](../background/performance.md#34-set-up-computing-phi2_toep-on-all-gpus)
 explain the mechanism and give all measurements.
 
