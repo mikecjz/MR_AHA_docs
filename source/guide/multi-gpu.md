@@ -13,7 +13,7 @@ broadcasts `x` and gathers the partial outputs. Both methods work this way:
   maps. No kernel, so the memory per GPU is far smaller; set-up is plan creation on every GPU.
 
 ```matlab
-op   = mr_aha_op.create_op(SEs, phi2, traj, config, 'devices', 1:4);   % 1-based gpuDevice indices
+op   = mr_aha.create_op(SEs, phi2, traj, config, 'devices', 1:4);   % 1-based gpuDevice indices
 AhAx = op * x;                                                         % or op.apply(x)
 info = op.info();                                                      % devices, coils, timings
 delete(op);

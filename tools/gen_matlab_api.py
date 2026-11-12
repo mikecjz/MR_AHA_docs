@@ -23,7 +23,7 @@ from pathlib import Path
 
 #: Functions shown first on the index page, in this order; the remaining
 #: files follow alphabetically under "Helpers".
-MAIN = ["mr_aha_op", "mr_default_config", "calc_toep", "AhA_Toeplitz",
+MAIN = ["mr_aha", "mr_default_config", "calc_toep", "AhA_Toeplitz",
         "calc_mask", "mr_nufft_plan", "AhA_cufinufft", "mr_backend"]
 
 

@@ -3,7 +3,7 @@
 ## `create_op` — the operator object
 
 ```
-op   = mr_aha_op.create_op(SEs, phi2, traj, config, ...)       % MATLAB
+op   = mr_aha.create_op(SEs, phi2, traj, config, ...)       % MATLAB
 op   = mr_aha.create_op(cfg, SEs, phi2, traj, ...)             # Python
        mr_op_create(&cfg, &inputs, &options, &op)              /* C */
 AhAx = op * x  /  op(x)  /  mr_op_execute(op, d_x, d_AhAx)
