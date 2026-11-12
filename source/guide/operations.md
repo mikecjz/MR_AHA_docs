@@ -7,8 +7,9 @@ The library offers its operations at two levels:
   maps and every working buffer, and can be multi-GPU. Use it for reconstructions.
 * **Standalone operations.** `calc_toep`, `AhA_Toeplitz` and `calc_mask` are the individual
   steps the packaged operator is built from, each available on its own. They are stateless and
-  single-GPU: every call takes all its inputs and allocates its own buffers. Use them to inspect
-  or save the kernel, or to build a pipeline of your own.
+  single-GPU: every call takes all its inputs and allocates its own buffers. They are for users
+  who prefer granular control: inspecting or saving the kernel, reusing it across sessions, or
+  building a pipeline of their own.
 
 ## Packaged operation: `create_op` and apply
 
@@ -51,7 +52,10 @@ below. `devices` makes it multi-GPU on one node, with the coils split over the G
 
 ## Standalone operations
 
-Each of these runs once, on the current GPU, and keeps nothing between calls.
+These are for users who prefer granular control over each step. You decide when the kernel is
+computed, where it is stored and how it is applied. Each operation runs once, on the current GPU,
+and keeps nothing between calls. They call the same C functions as `create_op` and compute the
+same operator.
 
 ### `calc_toep` — one-off pre-computation
 
