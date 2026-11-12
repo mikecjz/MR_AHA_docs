@@ -104,6 +104,7 @@ if gen_matlab_api.main(str(MR_AHA / "matlab"), str(HERE / "api" / "matlab")):
 html_theme = "furo"
 html_title = "MR_AHA"
 html_static_path = ["_static"]
+html_css_files = ["custom.css"]
 html_theme_options = {
     "light_logo": "wordmark-light.svg",
     "dark_logo": "wordmark-dark.svg",
