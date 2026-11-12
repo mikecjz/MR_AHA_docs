@@ -56,9 +56,10 @@ GPUs; see [Multi-GPU](multi-gpu.md).
 > * `MR_AHA_TOEP_GPU_METHOD` (CUDA only) sets cufinufft's spreading method: 0 = cufinufft's
 >   choice (default), 1 = GM-sort, 2 = shared memory.
 >
-> The defaults are the recommended settings. One combination is faster on CUDA: σ = 1.25 with
+> The defaults are the recommended settings. Two settings are faster on CUDA: σ = 1.25 with
 > `eps = 1e-4` computes the 3D kooshball kernel 1.7× faster than σ = 2 with `eps = 1e-5`, at a
-> similar error. These switches are for benchmarking and may change; see
+> similar error, and GM-sort is 1.3–1.6× faster for 2D and stack at the same accuracy. These
+> switches are for benchmarking and may change; see
 > [NUFFT upsampling factor](../benchmarks/upsampfac.md) for the measurements.
 
 ## `AhA_Toeplitz` — the hot loop

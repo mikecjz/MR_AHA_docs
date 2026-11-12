@@ -42,10 +42,6 @@ is the unmasked Toeplitz-vs-NUFFT difference measured on the L40S in the [main s
   of the grid at 2.9·10⁻², and r = 8 still gives 3·10⁻³ at 14 % kept. Here the kernel's energy
   away from the arms lies in tails that run parallel to the kx and ky axes, and a box around each
   sample does not follow those tails.
-* **r = 0 (nearest grid point only) is never usable.** Its error is about 10⁻¹ in every problem.
-  Samples fall between grid points, so the kernel around a sample is spread over at least the
-  neighbouring cells. For radial and kooshball sampling, r = 1 already leaves gaps between spokes
-  near the edge of k-space.
 * **White noise** is harder, because it puts energy at frequencies that the mask drops. At r = 2
   its error is 4·10⁻² (spiral), 3·10⁻² (64 spokes), 8·10⁻³ (280 spokes) and 1.5·10⁻³ (kooshball).
 
@@ -63,8 +59,7 @@ share of the grid.
 3. Dilate the marks with a (2r+1)ᵈ box, so that every point within r cells of a marked point is kept
    (Chebyshev distance, periodic edges).
 
-r = 0 keeps only the nearest grid point of each sample. Note that on the 2× grid, samples along a
-radial spoke are 2 cells apart.
+On the 2× grid, samples along a radial spoke are 2 cells apart.
 
 ## Test problems
 
@@ -93,7 +88,7 @@ The "unmasked" row is the floor: the Toeplitz embedding error plus the NUFFT tol
 
 ## Results per problem
 
-Each figure shows the mask at radii 0, 1, 2 and 4. The top row is
+Each figure shows the mask at radii 1, 2 and 4. The top row is
 the full upsampled grid (for 3D, the central kz plane). The bottom row zooms in on the orange box,
 at about 60 % of k_max along +kx, with the samples in orange; for 3D only samples within half a
 cell of that plane are shown. Kept locations are blue.
@@ -104,7 +99,6 @@ cell of that plane are shown. Kept locations are blue.
 
 | mask | grid kept | image ÷ out | image ÷ in | white noise ÷ out | white noise ÷ in |
 |---|---|---|---|---|---|
-| neighbourhood r = 0 | 0.6% | 1.3·10⁻¹ | 1.4·10⁻² | 1.8·10⁻¹ | 1.8·10⁻³ |
 | neighbourhood r = 1 | 2.3% | 4.3·10⁻² | 4.5·10⁻³ | 6.0·10⁻² | 6.2·10⁻⁴ |
 | neighbourhood r = 2 | 4.0% | 2.9·10⁻² | 3.1·10⁻³ | 3.9·10⁻² | 4.0·10⁻⁴ |
 | neighbourhood r = 3 | 5.7% | 1.9·10⁻² | 2.0·10⁻³ | 2.6·10⁻² | 2.7·10⁻⁴ |
@@ -119,7 +113,6 @@ cell of that plane are shown. Kept locations are blue.
 
 | mask | grid kept | image ÷ out | image ÷ in | white noise ÷ out | white noise ÷ in |
 |---|---|---|---|---|---|
-| neighbourhood r = 0 | 9.4% | 1.4·10⁻¹ | 1.1·10⁻² | 2.8·10⁻¹ | 4.9·10⁻³ |
 | neighbourhood r = 1 | 50.7% | 2.6·10⁻³ | 2.1·10⁻⁴ | 7.9·10⁻² | 1.4·10⁻³ |
 | neighbourhood r = 2 | 73.2% | 5.3·10⁻⁴ | 4.3·10⁻⁵ | 3.2·10⁻² | 5.6·10⁻⁴ |
 | neighbourhood r = 3 | 80.2% | 1.4·10⁻⁴ | 1.1·10⁻⁵ | 1.0·10⁻² | 1.8·10⁻⁴ |
@@ -134,7 +127,6 @@ cell of that plane are shown. Kept locations are blue.
 
 | mask | grid kept | image ÷ out | image ÷ in | white noise ÷ out | white noise ÷ in |
 |---|---|---|---|---|---|
-| neighbourhood r = 0 | 19.0% | 1.2·10⁻¹ | 2.5·10⁻² | 3.2·10⁻¹ | 2.4·10⁻³ |
 | neighbourhood r = 1 | 77.1% | 2.6·10⁻⁵ | 5.6·10⁻⁶ | 4.2·10⁻² | 3.2·10⁻⁴ |
 | neighbourhood r = 2 | 79.3% | 3.3·10⁻⁶ | 7.0·10⁻⁷ | 7.7·10⁻³ | 5.9·10⁻⁵ |
 | neighbourhood r = 3 | 79.8% | 2.3·10⁻⁶ | 4.9·10⁻⁷ | 5.6·10⁻³ | 4.3·10⁻⁵ |
@@ -149,7 +141,6 @@ cell of that plane are shown. Kept locations are blue.
 
 | mask | grid kept | image ÷ out | image ÷ in | white noise ÷ out | white noise ÷ in |
 |---|---|---|---|---|---|
-| neighbourhood r = 0 | 4.1% | 1.2·10⁻¹ | 2.7·10⁻² | 1.6·10⁻¹ | 1.2·10⁻⁴ |
 | neighbourhood r = 1 | 44.3% | 2.0·10⁻⁵ | 4.4·10⁻⁶ | 1.5·10⁻² | 1.1·10⁻⁵ |
 | neighbourhood r = 2 | 53.9% | 4.3·10⁻⁶ | 9.5·10⁻⁷ | 1.5·10⁻³ | 1.1·10⁻⁶ |
 | neighbourhood r = 3 | 55.5% | 4.1·10⁻⁶ | 9.1·10⁻⁷ | 1.1·10⁻³ | 8.1·10⁻⁷ |

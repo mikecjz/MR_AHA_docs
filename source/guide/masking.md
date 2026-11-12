@@ -20,4 +20,4 @@ densely sampled test problems radius 2 is as accurate as the unmasked operator:
 It is less accurate on the 377-spoke 160² radial data (80 % kept, error 5·10⁻⁵) and on sparse
 trajectories (64 spokes: 5·10⁻⁴; two-arm spiral: 3·10⁻²). There, raise `mask_radius`.
 
-[Neighbourhood mask](../benchmarks/neighbour-mask.md) has the measurements for radii 0 to 8.
+[Neighbourhood mask](../benchmarks/neighbour-mask.md) has the measurements for radii 1 to 8.

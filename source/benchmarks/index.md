@@ -33,9 +33,9 @@ The pages of this section record the measurements made while the library was dev
 | Study | Question |
 |---|---|
 | [Main study](results.md) | Toeplitz against NUFFT, one $A^H A$ and 20 CG iterations, on a TITAN RTX, an L40S and an Apple M3 Ultra |
-| [Neighbourhood mask](neighbour-mask.md) | how much of the grid the mask keeps and how accurate the masked operator is, for radii 0 to 8 |
+| [Neighbourhood mask](neighbour-mask.md) | how much of the grid the mask keeps and how accurate the masked operator is, for radii 1 to 8 |
 | [CUDA optimisation and multi-GPU](cuda-multigpu.md) | the default CUDA kernels against the generic ones, and scaling on several H100s |
-| [NUFFT upsampling factor](upsampfac.md) | the experimental `upsampfac` switch of `calc_toep` |
+| [NUFFT upsampling factor](upsampfac.md) | experimental NUFFT settings that compute the Toeplitz kernel faster |
 | [VkFFT on Metal](vkfft.md) | whether VkFFT's Metal backend is accurate and fast enough |
 
 ```{note}

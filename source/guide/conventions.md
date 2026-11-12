@@ -60,14 +60,6 @@ is passed unchanged apart from the dimension order: `permute(Phi2, [3 4 1 2])` i
 row-major `P.transpose(2, 3, 0, 1)` of the h5py array in Python (plus an `fftshift` along kz if it is
 in natural order).
 
-> **Upgrading from an earlier version.** Earlier versions multiplied $\Phi_2 v$ (column vector
-> from the left), i.e. they expected $\Phi^H\Phi$ of a time × rank basis. That is the transpose
-> (for these Hermitian blocks, the complex conjugate) of the block above. To upgrade:
->
-> * swap the two $L$ dimensions of Gram blocks prepared for those versions;
-> * recompute `phi2_toep` with `calc_toep`. A kernel computed by those versions corresponds to
->   the *other* triangulation with its entries transposed.
-
 ## Triangular packing
 
 Only $(L^2+L)/2$ of the $L^2$ entries of each block are stored; the rest follows from
