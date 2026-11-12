@@ -24,7 +24,7 @@ operator:
   against.
 
 By default the operator runs on the current GPU, at the same cost as the single-GPU primitives
-below. `devices` puts it on several GPUs of one node, with the coils split over the GPUs; see
+below. `devices` makes it multi-GPU on one node, with the coils split over the GPUs; see
 [Multi-GPU](multi-gpu.md).
 
 ## `calc_toep` — one-off pre-computation
@@ -43,8 +43,8 @@ trajectory (MR-Multitasking's `Phi_rt(:,idx) * Phi_rt(:,idx)'`, see
 3. centred inverse FFT;
 4. optional mask gather.
 
-`calc_toep` is a stateless, single-GPU primitive. The Toeplitz operator calls it internally. On
-several GPUs the operator spreads the $(L^2+L)/2$ independent triangular components over the
+`calc_toep` is a stateless, single-GPU primitive. The Toeplitz operator calls it internally. A
+multi-GPU operator spreads the $(L^2+L)/2$ independent triangular components over the
 GPUs; see [Multi-GPU](multi-gpu.md).
 
 > **Experimental: NUFFT settings of `calc_toep`.** Two environment variables, read when the

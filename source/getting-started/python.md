@@ -57,7 +57,7 @@ A MR-Multitasking `Phi2` read with h5py is row-major `(Nz, Ntrajs, L, L)`. Pass 
 | --- | --- | --- |
 | `method` | `"toeplitz"` | `"toeplitz"`: the kernel `phi2_toep` is computed at creation, and every application is FFT + block-diagonal multiplication. `"nufft"`: every application runs a type-2 NUFFT, the Gram multiplication on the samples and a type-1 NUFFT per coil (cufinufft, inside the library). It needs no kernel and much less memory, and takes longer per application. |
 | `devices` | `None` | `None`: the current GPU only. `"all"`: every visible GPU. A list of CUDA ordinals: those GPUs (the current one always takes part). Coils are split over the GPUs. |
-| `toep_dist` | `"auto"` | Toeplitz on several GPUs: how every GPU gets the kernel. `"split"`: each computes a share, and the shares are exchanged. `"replicate"`: each computes all of it. `"broadcast"`: one computes and copies to the others. `"auto"`: a cost model chooses. |
+| `toep_dist` | `"auto"` | Multi-GPU Toeplitz: how every GPU gets the kernel. `"split"`: each computes a share, and the shares are exchanged. `"replicate"`: each computes all of it. `"broadcast"`: one computes and copies to the others. `"auto"`: a cost model chooses. |
 | `share_primary` | `True` | Use `SEs` (and `mask`) in place instead of copying them. Do not modify them while the operator is open. |
 | `nufft_opts` | `None` | `method="nufft"`: `{"upsampfac": 2.0, "gpu_method": 0}`. |
 
@@ -80,7 +80,7 @@ op   = mr_aha.create_op(cfg, SEs, phi2, traj, mask)  # also sets cfg.num_masked
 `mask` holds **0-based** linear indices into the centred upsampled grid. See
 [Masking](../guide/masking.md).
 
-## Several GPUs (CUDA)
+## Multi-GPU (CUDA)
 
 ```python
 with mr_aha.create_op(cfg, SEs, phi2, traj, devices=[0, 1, 2, 3]) as op:

@@ -1,11 +1,11 @@
 # How the CUDA $A^H A$ operator gets its speed
 
 This note explains the design choices that make the CUDA backend fast: what each one does and why
-it saves time. It covers one application of the operator on one GPU (§2), on several GPUs (§3.1 to
-§3.3), the set-up of the Toeplitz kernel on several GPUs (§3.4) and the NUFFT method (§3.5).
+it saves time. It covers one application of the operator on one GPU (§2), multi-GPU (§3.1 to
+§3.3), the multi-GPU set-up of the Toeplitz kernel (§3.4) and the NUFFT method (§3.5).
 
 * For a short summary, read [Implementation notes](implementation.md).
-* For how to use several GPUs, read [Multi-GPU](../guide/multi-gpu.md).
+* For how to use multi-GPU, read [Multi-GPU](../guide/multi-gpu.md).
 * For the full measurements, read
   [CUDA operator optimisation and multi-GPU](../benchmarks/cuda-multigpu.md).
 
@@ -160,7 +160,7 @@ The effect: masked operators are 3–11 % faster than unmasked ones, and the mas
 on the 24 GB TITAN RTX.
 
 
-## 3. Several GPUs
+## 3. Multi-GPU
 
 ### 3.1 Decomposition by coil
 
@@ -346,7 +346,7 @@ back. Two choices keep it fast:
   data is never transposed, and any $L$ works. cufinufft bins the points itself, so the sample
   order changes only the floating-point summation order.
 * **Everything inside the library.** There is no per-coil overhead from Python or MATLAB, and the
-  same code serves both languages and several GPUs. The coils are split over the GPUs as for the
+  same code serves both languages and multi-GPU. The coils are split over the GPUs as for the
   Toeplitz method; each GPU holds its own plans, Gram blocks and trajectory.
 
 **Measured** on one TITAN RTX (`pact400-recon3`), random inputs, per application of $A^H A$
@@ -374,7 +374,7 @@ The tests are described in [Testing](../development/testing.md). The checks behi
   groups of 1, 2 and 4. They agree to single-precision rounding.
 - **Reference data.** `tests/check_reference.py` and `tests/check_reference_matlab.m` compare
   every public function with stored results.
-- **Several GPUs against one.** `tests/check_op.py` and `tests/check_op_matlab.m` cover 2D, stack
+- **Multi-GPU against single-GPU.** `tests/check_op.py` and `tests/check_op_matlab.m` cover 2D, stack
   and 3D problems, masked and unmasked, both triangles, every `toep_dist`, and the remainder
   split on and off. Measured during development:
   - the multi-GPU operator agrees with the single-GPU one to 7·10⁻⁸;

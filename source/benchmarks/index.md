@@ -3,7 +3,7 @@
 ## Measure it yourself
 
 [MR_AHA_benchmarks](https://github.com/mikecjz/MR_AHA_benchmarks) holds one script per language
-that builds a test problem, creates the operator with each method on one or several GPUs, and
+that builds a test problem, creates the operator with each method on one GPU or multi-GPU, and
 prints the set-up time and the time of one $A^H A$:
 
 ```bash
@@ -34,7 +34,7 @@ The pages of this section record the measurements made while the library was dev
 |---|---|
 | [Main study](results.md) | Toeplitz against NUFFT, one $A^H A$ and 20 CG iterations, on a TITAN RTX, an L40S and an Apple M3 Ultra |
 | [Neighbourhood mask](neighbour-mask.md) | how much of the grid the mask keeps and how accurate the masked operator is, for radii 1 to 8 |
-| [CUDA optimisation and multi-GPU](cuda-multigpu.md) | the default CUDA kernels against the generic ones, and scaling on several H100s |
+| [CUDA optimisation and multi-GPU](cuda-multigpu.md) | the default CUDA kernels against the generic ones, and multi-GPU scaling on H100s |
 | [NUFFT upsampling factor](upsampfac.md) | experimental NUFFT settings that compute the Toeplitz kernel faster |
 | [VkFFT on Metal](vkfft.md) | whether VkFFT's Metal backend is accurate and fast enough |
 

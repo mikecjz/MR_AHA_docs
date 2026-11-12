@@ -117,3 +117,35 @@ html_theme_options = {
 html_baseurl = "https://mikecjz.github.io/MR_AHA_docs/"
 copybutton_prompt_text = r">>> |\$ "
 copybutton_prompt_is_regexp = True
+
+
+# -- Sidebar: "Overview" entry for the home page, above Installation -------
+# A toctree "self" entry shows only on the home page itself, so the link is
+# added to Furo's navigation tree on every page (after Furo has built it).
+
+
+def _add_overview_link(app, pagename, templatename, context, doctree):
+    tree = context.get("furo_navigation_tree")
+    if not tree:
+        return
+    root = app.config.root_doc
+    if pagename == root:
+        item = (
+            '<li class="toctree-l1 current current-page">'
+            '<a class="current reference internal" href="#">Overview</a></li>'
+        )
+    else:
+        href = context["pathto"](root)
+        item = (
+            '<li class="toctree-l1">'
+            f'<a class="reference internal" href="{href}">Overview</a></li>'
+        )
+    start = tree.find("<ul")
+    if start < 0:
+        return
+    end = tree.find(">", start) + 1
+    context["furo_navigation_tree"] = tree[:end] + "\n" + item + tree[end:]
+
+
+def setup(app):
+    app.connect("html-page-context", _add_overview_link, priority=900)

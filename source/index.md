@@ -63,7 +63,7 @@ delete(op);                                          % frees the GPU memory
 | [The operations](guide/operations.md) | `create_op`, `calc_toep`, `AhA_Toeplitz`, `calc_mask` and the NUFFT reference |
 | [Conventions](guide/conventions.md) | array shapes, `config`, the Gram-block convention, triangular packing |
 | [Masking](guide/masking.md) | the masked operator and how the mask is chosen |
-| [Multi-GPU](guide/multi-gpu.md) | several GPUs, how the kernel is distributed |
+| [Multi-GPU](guide/multi-gpu.md) | spreading the coils over GPUs, how the kernel is distributed |
 | [Apple silicon](guide/apple-silicon.md) | the Metal backend |
 | [Why Toeplitz?](background/toeplitz.md) | the method, the [implementation notes](background/implementation.md), and [how the CUDA operator gets its speed](background/performance.md) |
 | [Benchmarks](benchmarks/index.md) | measured speed and accuracy, and scripts to measure your own |
@@ -73,7 +73,7 @@ delete(op);                                          % frees the GPU memory
 
 * [MR_AHA](https://github.com/mikecjz/MR_AHA): the library.
 * [MR_AHA_benchmarks](https://github.com/mikecjz/MR_AHA_benchmarks): Python and MATLAB scripts
-  that time the Toeplitz and NUFFT operators on one or several GPUs.
+  that time the Toeplitz and NUFFT operators on one GPU and multi-GPU.
 * [MR_AHA_docs](https://github.com/mikecjz/MR_AHA_docs): the sources of this site.
 
 ```{toctree}

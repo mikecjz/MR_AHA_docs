@@ -1,15 +1,15 @@
 # Multi-GPU (CUDA)
 
-$A^H A$ is a sum over coils, so one application can be spread over several GPUs of a node. Each
+$A^H A$ is a sum over coils, so one application can be spread over the GPUs of a node. Each
 GPU applies the operator for a share of the coils, and the partial results are summed on the
 caller's GPU (the *primary*).
 
-Whether an operator uses several GPUs is decided when it is created, with `devices`. The same
+Whether an operator is multi-GPU is decided when it is created, with `devices`. The same
 GPUs build the operator's constants and apply it. An application then only broadcasts `x` and
 gathers the partial outputs. Both methods work this way:
 
 * **Toeplitz**: every GPU holds a copy of `phi2_toep`, computed by all GPUs together
-  ([below](#set-up-computing-phi2_toep-on-all-gpus)), and its coils' maps. Several GPUs make the
+  ([below](#set-up-computing-phi2_toep-on-all-gpus)), and its coils' maps. Multi-GPU makes the
   operator faster but do not raise the largest problem size: the whole kernel must fit on every
   GPU.
 * **NUFFT**: every GPU holds its own cufinufft plans, the Gram blocks, the trajectory and its
@@ -115,7 +115,7 @@ explain the mechanism and give all measurements.
 
 ## Tests and measurements
 
-* `tests/check_op.py` and `tests/check_op_matlab.m` compare the operator on one and several GPUs,
+* `tests/check_op.py` and `tests/check_op_matlab.m` compare the single-GPU and multi-GPU operators,
   with both methods, against the single-GPU primitives and the NUFFT reference. See
   [Testing](../development/testing.md).
 * The scripts of [MR_AHA_benchmarks](https://github.com/mikecjz/MR_AHA_benchmarks) time the

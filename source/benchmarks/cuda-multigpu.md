@@ -47,7 +47,7 @@ one coil at a time. The tables of the [main study](results.md) were measured wit
 * **Masked operator.** The masked kernel works in place and needs no scratch buffer per coil.
   That is what lets the masked 3D problem run on the TITAN RTX.
 
-## Several GPUs (H100 SXM, NVLink)
+## Multi-GPU (H100 SXM, NVLink)
 
 Up to 3 GPUs of one node (`esplhpc-cp089`; more were not free), 12 coils, 369 GB/s measured
 GPU-to-GPU:
