@@ -1,13 +1,15 @@
 # Why Toeplitz and How Does It Work?
 
-The AhA operator for MRI is [Toeplitz](https://en.wikipedia.org/wiki/Toeplitz_matrix) under
+## The idea
+
+The $A^H A$ operator of MRI is [Toeplitz](https://en.wikipedia.org/wiki/Toeplitz_matrix) for
 arbitrary non-Cartesian trajectories ([Baron et al., MRM
-2018](https://onlinelibrary.wiley.com/doi/10.1002/mrm.26928)). A Toeplitz matrix can be padded to 2X
-on its original dimensions to form a [Circulant
-matrix](https://en.wikipedia.org/wiki/Circulant_matrix), and be [calculated via
-FFTs](https://math.mit.edu/icg/resources/teaching/18.085-spring2015/toeplitz.pdf), requiring only
-$O(N \log N)$ operations instead of $O(N^2)$ for general matrix-vector multiplications. In other
-words, the Toeplitz operator can be diagonalized by FFTs.
+2018](https://onlinelibrary.wiley.com/doi/10.1002/mrm.26928)). A Toeplitz matrix can be embedded
+in a [circulant matrix](https://en.wikipedia.org/wiki/Circulant_matrix) of twice the size in each
+dimension, and a circulant matrix is [diagonalised by the
+FFT](https://math.mit.edu/icg/resources/teaching/18.085-spring2015/toeplitz.pdf). Applying the
+operator then takes $O(N \log N)$ operations instead of the $O(N^2)$ of a general matrix-vector
+product:
 
 $$Tx \implies F^H\Lambda F\hat{x}, $$
 
@@ -17,35 +19,36 @@ $$Tx \implies F^H\Lambda F\hat{x}, $$
 >* $\Lambda \in \mathbb{C}^{2N \times 2N}$ is a diagonal matrix
 >* $\hat{x} \in \mathbb{C}^{2N}$ is the zero-padded vector of $x$
 
-The diagonal elements of $\Lambda$ can be derived based on the non-Cartesian coordinates but we
-usually use NUFFT packages to estimate them (see [Baron et al., MRM
+The diagonal of $\Lambda$ follows from the non-Cartesian coordinates. In practice it is computed
+with a NUFFT, once per trajectory ([Baron et al., MRM
 2018](https://onlinelibrary.wiley.com/doi/10.1002/mrm.26928)).
 
-Under MR-Multitasking, the AhA operator is block-Toeplitz, which can be diagonalized similarly, with
-the "diagonal" aspect being block-diagonal, a.k.a. the gridded $\Phi\Phi^H$ operator — this is
-`phi2_toep`.
+## With a low-rank model
 
-The challenge for 3D stack-of-stars AhA is that there is usually not enough GPU memory to hold the
-gridded $\Phi\Phi^H$ operator, which has a size of $2N_x \times 2N_y \times N_z \times L \times L$.
-For a $320 \times 320 \times 56$ matrix with $L = 16$, that is about 26 GB in single precision and a
-24 GB GPU cannot hold it.
+Under MR-Multitasking the $A^H A$ operator is block-Toeplitz. It is diagonalised in the same way,
+except that $\Lambda$ becomes block-diagonal: one $L \times L$ block per upsampled k-space
+location. This block-diagonal multiplier is the gridded $\Phi\Phi^H$ operator, which the library
+calls `phi2_toep`.
 
-Luckily for us, each individual $L \times L$ matrix of the gridded $\Phi\Phi^H$ operator is
-[Hermitian](https://en.wikipedia.org/wiki/Hermitian_matrix), so the lower triangle is the complex
-conjugate of the upper one. Storing a single triangle — which is what `config.triangulation`
-selects — halves that to about 13 GB and makes the 3D operator feasible. When even that is too
-much, `config.is_masked` keeps only the upsampled k-space samples that actually carry signal.
+## Fitting it in GPU memory
 
-## A note on Hermitian symmetry and the old "deconvolve" hack
+The gridded $\Phi\Phi^H$ operator has $2N_x \times 2N_y \times N_z \times L \times L$ entries for
+a stack-of-stars acquisition. For a $320 \times 320 \times 56$ matrix with $L = 12$ that is about
+26 GB in single precision, more than a 24 GB GPU holds. Two properties make it fit:
 
-The previous implementation observed that the gridded $\Phi\Phi^H$ came out slightly non-Hermitian,
-and blamed the deconvolution (transfer-function division) step of the type-1 NUFFT; it worked around
-this with a [FINUFFT fork](https://github.com/mikecjz/finufft/tree/toeplitz) exposing the spreading
-and deconvolution stages separately.
+* **One triangle is enough.** Each $L \times L$ block is
+  [Hermitian](https://en.wikipedia.org/wiki/Hermitian_matrix), so its lower triangle is the
+  complex conjugate of its upper one. The library stores a single triangle, the one selected by
+  `config.triangulation`: $(L^2+L)/2$ entries per block instead of $L^2$. In the example that is
+  about 14 GB.
+* **A mask removes the empty locations.** `config.is_masked` keeps only the upsampled k-space
+  locations that carry signal. See [Masking](../guide/masking.md).
 
-That workaround is gone. Hermitian symmetry is now enforced *structurally*: only one triangle is
-ever computed and stored, and the mirrored half is produced by conjugation inside the
-block-diagonal kernel. The gridded operator is therefore Hermitian by construction, to machine
-precision, whatever the NUFFT does internally — which also means unmodified upstream FINUFFT works.
-[`examples/example_aha.cu`](https://github.com/mikecjz/MR_AHA/blob/main/examples/example_aha.cu) checks
-$\langle y, A^HAx\rangle = \langle A^HAy, x\rangle$ end to end.
+## Hermitian by construction
+
+Only one triangle of each block is ever computed and stored, and the block-diagonal kernel
+produces the mirrored half by conjugation. The gridded operator is therefore Hermitian to machine
+precision, whatever the NUFFT does internally, and the library works with unmodified upstream
+FINUFFT.
+[`examples/example_aha.cu`](https://github.com/mikecjz/MR_AHA/blob/main/examples/example_aha.cu)
+checks $\langle y, A^HAx\rangle = \langle A^HAy, x\rangle$ end to end.

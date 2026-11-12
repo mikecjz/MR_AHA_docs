@@ -1,13 +1,25 @@
 # Experimental: NUFFT upsampling factor in `calc_toep`
 
-`calc_toep` runs its type-1 transforms at cufinufft's standard upsampling factor σ = 2. The
-experimental environment variables `MR_AHA_TOEP_UPSAMPFAC` (σ, default 2.0) and
-`MR_AHA_TOEP_GPU_METHOD` (type-1 spreading method, default 0 = cufinufft's choice) change that;
-[`toep_upsampfac.py`](https://github.com/mikecjz/MR_AHA/blob/b4fb00c/benchmarks/toep_upsampfac.py) sweeps σ ∈ {2, 1.25}, `eps` ∈ {1e-6, 1e-5, 1e-4} and
-method ∈ {auto, 1 = GM-sort} on one TITAN RTX (`pact400-recon3`). Time is the kernel computation
-inside `create_op` (minimum of two); the error is one $A^HA$ application against the NUFFT operator
-(σ = 2, `eps` = 1e-6). The 3D problem uses the default mask (`calc_mask`, radius 2); 2D and stack are
-unmasked. Raw numbers: `results/pact400-recon3/toep_upsampfac_<problem>.json`.
+`calc_toep` runs its type-1 transforms at cufinufft's standard upsampling factor σ = 2. Two
+experimental environment variables change that: `MR_AHA_TOEP_UPSAMPFAC` (σ, default 2.0) and
+`MR_AHA_TOEP_GPU_METHOD` (type-1 spreading method, default 0 = cufinufft's choice).
+
+> **Outcome.** The defaults (σ = 2, cufinufft's choice of method) are the recommended settings on
+> both backends. One combination is faster on CUDA: for the 3D kooshball, σ = 1.25 at
+> `eps = 1e-4` computes the kernel 1.7× faster than σ = 2 at `eps = 1e-5`, at a similar error.
+
+## CUDA
+
+[`toep_upsampfac.py`](https://github.com/mikecjz/MR_AHA/blob/b4fb00c/benchmarks/toep_upsampfac.py)
+sweeps σ ∈ {2, 1.25}, `eps` ∈ {1e-6, 1e-5, 1e-4} and method ∈ {auto, 1 = GM-sort} on one TITAN
+RTX (`pact400-recon3`).
+
+* **Time** is the kernel computation inside `create_op` (minimum of two).
+* **Error** is one $A^HA$ application against the NUFFT operator (σ = 2, `eps` = 1e-6).
+* The 3D problem uses the default mask (`calc_mask`, radius 2); 2D and stack are unmasked.
+* Raw numbers: `results/pact400-recon3/toep_upsampfac_<problem>.json`.
+
+Each cell gives time / error.
 
 | problem | eps | method | σ = 2 (default) | σ = 1.25 |
 |---|---|---|---|---|
@@ -39,11 +51,13 @@ unmasked. Raw numbers: `results/pact400-recon3/toep_upsampfac_<problem>.json`.
 * **Default unchanged.** σ = 2 and cufinufft's method choice stay the defaults; the variables are
   experimental and not part of the API.
 
-**Apple silicon (M3 Ultra, `AW650523HJY`).** On Metal the kernel's type-1 NUFFT is mlx-nufft
-(`mr_aha._psf`), which reads the same `MR_AHA_TOEP_UPSAMPFAC`; there is no spreading-method switch.
-Same problems and protocol (time: `calc_toep` in Python, minimum of two; error against the
-mlx-nufft NUFFT operator at σ = 2, `eps` = 1e-6; 3D masked). Raw numbers:
-`results/AW650523HJY/toep_upsampfac_<problem>.json`.
+## Apple silicon
+
+Measured on an M3 Ultra (`AW650523HJY`). On Metal the kernel's type-1 NUFFT is mlx-nufft
+(`mr_aha._psf`), which reads the same `MR_AHA_TOEP_UPSAMPFAC`. There is no spreading-method
+switch. The problems and the protocol are the same: time is `calc_toep` in Python (minimum of
+two), the error is against the mlx-nufft NUFFT operator at σ = 2 and `eps` = 1e-6, and 3D is
+masked. Raw numbers: `results/AW650523HJY/toep_upsampfac_<problem>.json`.
 
 | problem | eps | σ = 2 (default) | σ = 1.25 |
 |---|---|---|---|

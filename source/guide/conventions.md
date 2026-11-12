@@ -1,7 +1,7 @@
 # Conventions
 
 **Column-major.** Every array shape in this document and in the C header is column-major (MATLAB /
-Fortran). Row-major callers (NumPy, CuPy) reverse the dimension order — the memory layout is
+Fortran). Row-major callers (NumPy, CuPy) reverse the dimension order. The memory layout is
 identical, so nothing ever has to be permuted.
 
 **Centred arrays.** Image-space and k-space arrays have their origin in the *middle* of the array,
@@ -60,11 +60,13 @@ is passed unchanged apart from the dimension order: `permute(Phi2, [3 4 1 2])` i
 row-major `P.transpose(2, 3, 0, 1)` of the h5py array in Python (plus an `fftshift` along kz if it is
 in natural order).
 
-> **Changed.** Earlier versions multiplied $\Phi_2 v$ (column vector from the left), i.e. they
-> expected $\Phi^H\Phi$ of a time × rank basis — the transpose (for these Hermitian blocks, the
-> complex conjugate) of the block above. Gram blocks prepared for those versions need their two
-> $L$ dimensions swapped; `phi2_toep` computed by them corresponds to the *other* triangulation with
-> its entries transposed, so recompute it with `calc_toep`.
+> **Upgrading from an earlier version.** Earlier versions multiplied $\Phi_2 v$ (column vector
+> from the left), i.e. they expected $\Phi^H\Phi$ of a time × rank basis. That is the transpose
+> (for these Hermitian blocks, the complex conjugate) of the block above. To upgrade:
+>
+> * swap the two $L$ dimensions of Gram blocks prepared for those versions;
+> * recompute `phi2_toep` with `calc_toep`. A kernel computed by those versions corresponds to
+>   the *other* triangulation with its entries transposed.
 
 ## Triangular packing
 

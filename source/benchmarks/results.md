@@ -1,15 +1,20 @@
 # Main study: Toeplitz vs. NUFFT $A^HA$
 
 This study benchmarks the speed and accuracy of the Toeplitz-embedded operator of MR_AHA
-(`mr_aha.create_op`, Python; `mr_aha.AhAPlan` when these runs were made) against the "vanilla"
-operator that applies type-2 and type-1 cufinufft transforms in every call (`mr_aha.AhANufftPlan` in
-Python, `AhA_cufinufft.m` in MATLAB; inside the library: `create_op(..., method='nufft')`).
+(`mr_aha.create_op` in Python) against the NUFFT operator, which applies type-2 and type-1
+cufinufft transforms in every call (`mr_aha.AhANufftPlan` in Python, `AhA_cufinufft.m` in MATLAB;
+inside the library: `create_op(..., method='nufft')`).
 
-> **Masks of this study.** The "masked" runs were made before the current `calc_mask`. Their masks
-> kept 83 % (2D), 81 % (stack) and 64 % (3D) of the upsampled grid. Today's `calc_mask` (every
-> location within `mask_radius = 2` cells of a sample) keeps 80 %, 79 % and 54 % on the same
-> trajectories; see [Neighbourhood mask](neighbour-mask.md). The kernel size is proportional to
-> the kept fraction.
+> **Reading the Toeplitz numbers.** Two things are better in the current library than in these
+> tables:
+>
+> * **Speed.** These runs used the generic block-diagonal kernels, one coil at a time. The
+>   default kernels are 15–50 % faster on one GPU; see
+>   [CUDA operator optimisation and multi-GPU](cuda-multigpu.md).
+> * **Masks.** The masks of this study kept 83 % (2D), 81 % (stack) and 64 % (3D) of the upsampled
+>   grid. `calc_mask` with its default `mask_radius = 2` keeps 80 %, 79 % and 54 % on the same
+>   trajectories; see [Neighbourhood mask](neighbour-mask.md). The kernel size is proportional to
+>   the kept fraction.
 
 Everything was run on two machines:
 
@@ -41,14 +46,11 @@ JSON files next to them.
   its cufinufft build is newer, since the Python wheel is 2.5.1. Python is 12–17 % faster in 2D.
   Selecting cufinufft's `gpu_method` per transform type matters more than the language: it is worth
   1.4–1.9× in 2D and stack. The default settings are always reported alongside the tuned ones.
-* **Masking saves memory, not time.** The masks of this study kept 83 % (2D), 81 % (stack) and
-  64 % (3D) of the upsampled grid. The kernel shrinks by 17–36 %, which is what lets the 3D problem
-  run on the 24 GB TITAN at all: unmasked it needs 19 GB of kernel. The CG solution moves by only
-  2·10⁻⁵. One masked application was *not* faster in these runs. The masked execute path gathered
-  the retained locations into a compact buffer, multiplied them, zeroed the *whole* padded grid and
-  scattered the result back. That cost about as much as the dense in-place multiply it replaced,
-  and the two padded FFTs, which masking does not touch, dominate the operator anyway. (That path
-  has since been replaced; see the recommendations below.)
+* **Masking saves memory.** The masks of this study kept 83 % (2D), 81 % (stack) and 64 % (3D) of
+  the upsampled grid. The kernel shrinks by 17–36 %, which is what lets the 3D problem run on the
+  24 GB TITAN at all: unmasked it needs 19 GB of kernel. The CG solution moves by only 2·10⁻⁵.
+  In these runs a masked application takes slightly longer than an unmasked one. With the default
+  in-place masked kernel it is 3–11 % faster; see [CUDA operator optimisation](cuda-multigpu.md).
 * **For a sparse trajectory the mask saves far more, at a price in accuracy.** With a two-arm
   spiral on a 256² matrix, a radius of 2 keeps only 4 % of the grid and a radius of 8 keeps 14 %.
   The operator error is then 3·10⁻² and 3·10⁻³, not 10⁻⁶. See
@@ -93,9 +95,9 @@ the reconstruction is only physically right with the shift.
     on the 3D data) and `einsum` in CuPy.
 * **Tuning.** "Tuned" picks the fastest (type-1, type-2) `gpu_method` pair out of {1, 2}² for each
   dataset and machine.
-* **Toeplitz operator.** `mr_aha.calc_toep` once, then the then `AhAPlan.apply` (today:
-  `mr_aha.create_op`, which computes the same kernel inside). "Masked" uses the masks described
-  in the note at the top of this page.
+* **Toeplitz operator.** The kernel is computed once (`calc_toep`) and then applied repeatedly,
+  which is what `mr_aha.create_op` does. "Masked" uses the masks described in the note at the top
+  of this page.
 * **Timing.** Wall time with device synchronisation, after a warm-up call. The median of 20 (2D)
   or 5 (stack, 3D) calls is reported.
 * **CG.** Plain conjugate gradient from $u_0 = 0$, exactly 20 iterations, no stopping test. The
@@ -178,14 +180,12 @@ is in [`results/AW650523HJY/summary.md`](https://github.com/mikecjz/MR_AHA/blob/
   reference.
 * **Use `is_masked = true` when memory is tight.** In 3D the kernel is the largest allocation.
   `calc_mask` with its default radius 2 cuts it by almost half (54 % of the grid kept) at the
-  accuracy of the unmasked operator.
+  accuracy of the unmasked operator. The masked operator is also 3–11 % faster than the unmasked
+  one, because its kernel works in place on the padded grid; see
+  [CUDA operator optimisation](cuda-multigpu.md).
 * **Sparse trajectories (few spiral arms, few shots): pick `mask_radius` for the accuracy you
   need.** On the two-arm spiral, radius 2 keeps 4 % of the grid at 3·10⁻² operator error and
   radius 8 keeps 14 % at 3·10⁻³; see [Neighbourhood mask](neighbour-mask.md). Also pass a small
   `mem_fraction` so that `calc_toep`'s transient memory stays close to the masked kernel's size.
-* **The faster masked execute path is implemented (2026-11).** The gather / memset / scatter passes
-  were replaced by one in-place pass over the padded grid through an `int32` index map (−1 outside
-  the mask), so masked operators are now 3–11 % faster than unmasked ones instead of slower; see
-  [CUDA operator optimisation](cuda-multigpu.md).
 * **When using the NUFFT path, tune `gpu_method`.** Pass `type1_opts` / `type2_opts`; on these
   problems (1, 2) or (1, 1) was best except for 3D on the L40S, where (2, 2) won.

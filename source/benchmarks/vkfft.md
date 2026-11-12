@@ -2,9 +2,9 @@
 
 The Toeplitz operator spends its FFT time on one forward and one inverse batched C2C transform per
 coil, on the zero-padded grid `[Mx, My, (Mz), L]` (column-major, batch `L`, unnormalised in both
-directions, exactly as `cufftExecC2C` in `src/core/mr_aha.cu`). Before porting the operator to
-Metal, this study checked that VkFFT's Metal backend computes that transform accurately and fast
-on the Mac Studio, at the sizes of the three benchmark problems of the [main study](results.md).
+directions, exactly as `cufftExecC2C` in `src/cuda/mr_aha.cu`). This study checks that VkFFT's Metal backend
+computes that transform accurately and fast on the Mac Studio, at the sizes of the three
+benchmark problems of the [main study](results.md).
 
 The files named below are in [`benchmarks/vkfft/`](https://github.com/mikecjz/MR_AHA/tree/b4fb00c/benchmarks/vkfft) of MR_AHA at commit
 `b4fb00c`, the last one that contained the benchmark folder.
@@ -18,8 +18,8 @@ The files named below are in [`benchmarks/vkfft/`](https://github.com/mikecjz/MR
 | `../results/pact400-recon3/cufft_bench.json` | TITAN RTX cuFFT results |
 
 VkFFT and metal-cpp come from the `third_party/VkFFT` submodule (the `mikecjz/VkFFT` fork, see
-[below](#known-vkfft-issue-double-free-with-autorelease-pools)). The results table was measured
-with upstream v1.3.4.
+[below](#the-vkfft-fork)). The results table was measured with upstream v1.3.4; the fork gives
+the same numbers.
 
 ```bash
 # on the Mac, from the repository root
@@ -43,8 +43,8 @@ runs after warm-up, in ms. VkFFT and cuFFT times are GPU times; MLX times are wa
 | stack | 640² × 56 × 12 | 2.2 GB | 54.1 | 51.0 / **37.9** | 73.6 |
 | 3d | 320³ × 12 | 3.1 GB | 78.2 | 53.9 / 54.0 | 104.9 |
 
-`coalescedMemory = 128` is worse (stack 51.0, 3d 91.5 ms), so the library will use 32 bytes,
-the value mlx-nufft also measured best on Apple GPUs.
+The library uses `coalescedMemory = 32`, the fastest setting here and the value mlx-nufft also
+measured best on Apple GPUs.
 
 Accuracy of the forward transform against a double-precision SciPy FFT (relative L2 error) and the
 round-trip error `||ifft(fft(x))/N − x|| / ||x||`:
@@ -56,45 +56,38 @@ round-trip error `||ifft(fft(x))/N − x|| / ||x||`:
 | 3d | 3.8e-7 | 3.8e-7 | 6.1e-7 | 8.7e-7 | 4.9e-7 |
 
 VkFFT plan creation (it generates and compiles its Metal kernels at run time) takes 2 ms (2d),
-240 ms (stack) and 305 ms (3d); a plan is built once per operator (`create_op`; `AhAPlan` at the time).
+240 ms (stack) and 305 ms (3d). A plan is built once per operator (`create_op`).
 
 **Conclusion.** VkFFT-Metal matches single-precision cuFFT accuracy and is 1.4–1.5× faster than
-cuFFT on the TITAN RTX for the two large grids, and about 1.9× faster than MLX's FFT there. It is the FFT
-backend for the Metal port. The 2D grid is too small to matter (0.1 ms per coil).
+cuFFT on the TITAN RTX for the two large grids, and about 1.9× faster than MLX's FFT there. It
+is the FFT of the Metal backend. The 2D grid is too small to matter (0.1 ms per coil).
 
-## Known VkFFT issue: double free with autorelease pools
+## The VkFFT fork
 
-VkFFT v1.3.4's Metal backend calls `release()` on objects it obtained autoreleased
-(`NS::String::string`, `MTL::CommandQueue::commandBuffer`, the encoders) during
-`initializeVkFFT`. Draining the autorelease pool that was active during plan creation therefore
-double-frees them and segfaults. This is upstream issue
-[DTolm/VkFFT#226](https://github.com/DTolm/VkFFT/issues/226), with an unmerged fix in PR
-[#227](https://github.com/DTolm/VkFFT/pull/227). MATLAB and Python drain their pools, so the
-library cannot live with it.
+The `third_party/VkFFT` submodule points to the fork
+[mikecjz/VkFFT](https://github.com/mikecjz/VkFFT), branch `mr_aha`. It is upstream `develop`
+(`e687182`, two bug-fix releases after v1.3.4) plus two commits for the Metal backend:
 
-**Fix in use.** The `third_party/VkFFT` submodule points to the fork
-[mikecjz/VkFFT](https://github.com/mikecjz/VkFFT), branch `mr_aha`: upstream `develop`
-(`e687182`, two bug-fix releases after v1.3.4) plus only the Metal commit of PR #227
-(`bd406e8`, authored by nweston), plus the push-constant fix below (`2f9fb8f`). The PR's second commit (an unrelated NVRTC change) is left out.
-With the fix, VkFFT no longer releases autoreleased objects, so every call into VkFFT must run
-inside an autorelease pool, which the library provides around each API entry point.
-`vkfft_bench --replan N` exercises exactly that life cycle (create, run, destroy, drain) N times.
-Drop the fork once upstream merges the fix.
+1. **Autorelease pools** (`bd406e8`, authored by nweston; the Metal commit of upstream PR
+   [#227](https://github.com/DTolm/VkFFT/pull/227), which fixes issue
+   [DTolm/VkFFT#226](https://github.com/DTolm/VkFFT/issues/226)). VkFFT leaves the objects it
+   obtains autoreleased (`NS::String::string`, `MTL::CommandQueue::commandBuffer`, the encoders)
+   to the autorelease pool. Plans then survive the draining of the pool, which MATLAB and Python
+   do. Every call into VkFFT must run inside an autorelease pool; the library provides one around
+   each API entry point.
+2. **Push constants** (`2f9fb8f`). The fork passes each dispatch's push constants with
+   `setBytes`, which copies them at encode time. Several dispatches can then share one command
+   buffer, each with its own values.
 
-**Second fork patch (`2f9fb8f`).** VkFFT's Metal backend kept each axis's push constants in one
-shared `MTLBuffer` that it rewrote on the CPU before every dispatch. The GPU reads that buffer only
-when the command buffer runs, so all dispatches encoded into one command buffer saw the values of
-the last one. This broke launch-time offsets (`specifyOffsetsAtLaunch`) and would equally break
-VkFFT's own split dispatches (`workGroupShift`) on very large grids. The fork now passes the push
-constants with `setBytes`, which copies them at encode time.
+`vkfft_bench --replan N` exercises the life cycle of a plan (create, run, destroy, drain) N
+times. With the fork (`coalescedMemory=32`), `--replan 50` (2d) and `--replan 3` (stack, 3d)
+pass. The forward error against SciPy is 2.5e-7 / 2.9e-7 / 3.2e-7 and forward + inverse takes
+0.12 / 38.1 / 54.1 ms (2d / stack / 3d), the same as v1.3.4.
 
-**Size limit.** VkFFT switches to 64-bit addressing for buffers of 2^34 bytes (2^31 complex
-values) or more, and that Metal code does not compile. An attempt to split such batches into
-launches at buffer offsets (which is what exposed the push-constant bug) worked on small tests
-but not at full size: the offsets enter VkFFT's 32-bit index arithmetic, and in a 20 GB 3D batch
-(78 x 320^3) every volume past 2^31 values came out wrong. The library therefore rejects FFT
-batches of 2^31 values or more (`src/metal/mr_metal_fft.cpp`) and `calc_toep` chunks below it.
+The fork can be dropped once upstream merges PR #227.
 
-Re-checked with the fork (`coalescedMemory=32`): `--replan 50` (2d) and `--replan 3` (stack, 3d)
-pass; forward error vs SciPy 2.5e-7 / 2.9e-7 / 3.2e-7 and fwd+inv 0.12 / 38.1 / 54.1 ms
-(2d / stack / 3d), the same as v1.3.4.
+## Size limit
+
+VkFFT's Metal backend indexes with 32 bits, so one transform covers fewer than 2^31 complex
+values (2^34 bytes). The library rejects larger FFT batches (`src/metal/mr_metal_fft.cpp`), and
+`calc_toep` chunks its components to stay below the limit.

@@ -65,7 +65,7 @@ delete(op);                                          % frees the GPU memory
 | [Masking](guide/masking.md) | the masked operator and how the mask is chosen |
 | [Multi-GPU](guide/multi-gpu.md) | several GPUs, how the kernel is distributed |
 | [Apple silicon](guide/apple-silicon.md) | the Metal backend |
-| [Why Toeplitz?](background/toeplitz.md) | the method, and [implementation notes](background/implementation.md) |
+| [Why Toeplitz?](background/toeplitz.md) | the method, the [implementation notes](background/implementation.md), and [how the CUDA operator gets its speed](background/performance.md) |
 | [Benchmarks](benchmarks/index.md) | measured speed and accuracy, and scripts to measure your own |
 | API reference | [Python](api/python/mr_aha/index), [C](api/c.md), [MATLAB](api/matlab/index.md) |
 

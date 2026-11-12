@@ -23,10 +23,13 @@ for (int it = 0; it < n_iter; ++it)
 mr_op_destroy(op);
 ```
 
-Every entry point returns `MR_SUCCESS` (0) or a negative `mr_status`; `mr_status_string` gives the
-category and `mr_last_error` the detailed, thread-local diagnostic. The stateless single-GPU
-primitives `mr_calc_toep`, `mr_aha_plan_*` and `mr_aha_toeplitz` remain available. Link against `mr_aha`, or `target_link_libraries(your_target mr_aha)`
-after `add_subdirectory(MR_AHA)`.
+* **Errors.** Every entry point returns `MR_SUCCESS` (0) or a negative `mr_status`.
+  `mr_status_string` gives the category and `mr_last_error` the detailed, thread-local
+  diagnostic.
+* **Primitives.** The stateless single-GPU primitives `mr_calc_toep`, `mr_aha_plan_*` and
+  `mr_aha_toeplitz` are available next to the operator object.
+* **Linking.** Link against `mr_aha`, or use `target_link_libraries(your_target mr_aha)` after
+  `add_subdirectory(MR_AHA)`.
 
 [`examples/example_aha.cu`](https://github.com/mikecjz/MR_AHA/blob/main/examples/example_aha.cu) is a complete, self-contained program that
 builds a synthetic stack-of-stars problem, checks the operator's Hermitian symmetry and compares

@@ -47,12 +47,18 @@ python tests/check_op.py --devices 0 1 2 3 [--quick]       # several GPUs
 ```
 
 `tests/check_op.py` (CUDA) checks `create_op` against the stateless primitives and the
-independent NUFFT reference on random 2D, stack and 3D problems. On one GPU: a Toeplitz
-operator with an injected kernel is bit-identical to `aha_toeplitz`; with its own kernel it
-matches `calc_toep` and `aha_toeplitz` to cufinufft's run-to-run noise; the NUFFT method
-matches `AhANufftPlan` to `1e-5`. On several GPUs: every `toep_dist`, the remainder split by
-rank, the kernel copies on every GPU, memory leaks, and a forced allocation failure on another
-GPU. `tests/check_op_matlab.m` is the MATLAB counterpart; its multi-GPU checks run only with
+independent NUFFT reference on random 2D, stack and 3D problems.
+
+On one GPU:
+
+* a Toeplitz operator with an injected kernel is bit-identical to `aha_toeplitz`;
+* with its own kernel it matches `calc_toep` and `aha_toeplitz` to cufinufft's run-to-run noise;
+* the NUFFT method matches `AhANufftPlan` to `1e-5`.
+
+On several GPUs it checks every `toep_dist`, the remainder split by rank, the kernel copies on
+every GPU, memory leaks, and a forced allocation failure on another GPU.
+
+`tests/check_op_matlab.m` is the MATLAB counterpart. Its multi-GPU checks run only with
 `MR_AHA_TEST_MGPU=1`.
 
 ## Block-diagonal kernels

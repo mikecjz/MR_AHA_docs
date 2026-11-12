@@ -1,8 +1,13 @@
 # Installation
 
-Requirements (CUDA backend): CUDA toolkit (11.x or 12.x), CMake ≥ 3.24, a C++17 compiler, and the
-bundled FINUFFT submodule (`third_party/finufft`). Stock upstream FINUFFT is enough; no
-fork is needed. For Apple silicon see [Apple silicon](../guide/apple-silicon.md).
+Requirements (CUDA backend):
+
+* CUDA toolkit 11.x or 12.x;
+* CMake ≥ 3.24;
+* a C++17 compiler;
+* the bundled FINUFFT submodule (`third_party/finufft`), which is stock upstream FINUFFT.
+
+For Apple silicon see [Apple silicon](../guide/apple-silicon.md).
 
 ```bash
 git clone --recurse-submodules https://github.com/mikecjz/MR_AHA.git
