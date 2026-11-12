@@ -3,19 +3,19 @@
 The Toeplitz operator spends its FFT time on one forward and one inverse batched C2C transform per
 coil, on the zero-padded grid `[Mx, My, (Mz), L]` (column-major, batch `L`, unnormalised in both
 directions, exactly as `cufftExecC2C` in `src/cuda/mr_aha.cu`). This study checks that VkFFT's Metal backend
-computes that transform accurately and fast on the Mac Studio, at the sizes of the three
+computes that transform accurately and fast on an Apple M3 Ultra, at the sizes of the three
 benchmark problems of the [main study](results.md).
 
-The files named below are in [`benchmarks/vkfft/`](https://github.com/mikecjz/MR_AHA/tree/b4fb00c/benchmarks/vkfft) of MR_AHA at commit
-`b4fb00c`, the last one that contained the benchmark folder.
+The files named below are in the `benchmarks/vkfft/` folder of MR_AHA (last published at commit
+`b4fb00c`).
 
 | file | purpose |
 |---|---|
 | `vkfft_bench.cpp`, `build.sh` | VkFFT (Metal backend) on a shared `MTL::Buffer`: plan time, round-trip error, GPU time (command-buffer timestamps) of forward, inverse and forward+inverse |
 | `check_vkfft.py` | runs `vkfft_bench` on fixed-seed data, compares its forward output against a double-precision SciPy FFT, and times MLX's `mx.fft` on the same data |
 | `cufft_bench.py` | the same transform with cuFFT through CuPy, for the NVIDIA baseline |
-| `results_AW650523HJY.json` | Mac Studio results (VkFFT default `coalescedMemory`) |
-| `../results/pact400-recon3/cufft_bench.json` | TITAN RTX cuFFT results |
+| `results_m3_ultra.json` | Apple M3 Ultra results (VkFFT default `coalescedMemory`) |
+| `../results/titan_rtx/cufft_bench.json` | TITAN RTX cuFFT results |
 
 VkFFT and metal-cpp come from the `third_party/VkFFT` submodule (the `mikecjz/VkFFT` fork, see
 [below](#the-vkfft-fork)). The results table was measured with upstream v1.3.4; the fork gives
@@ -32,8 +32,8 @@ python benchmarks/vkfft/cufft_bench.py
 
 ## Results (2026-11-05)
 
-Mac Studio: Apple M3 Ultra, 512 GB, macOS 26.7.2, VkFFT v1.3.4, MLX 0.31.2.
-NVIDIA baseline: TITAN RTX (`pact400-recon3`), cuFFT 11.3 via CuPy 14.2. Times are medians of 20
+Apple M3 Ultra, 512 GB unified memory, macOS 26.7.2, VkFFT v1.3.4, MLX 0.31.2.
+NVIDIA baseline: TITAN RTX, cuFFT 11.3 via CuPy 14.2. Times are medians of 20
 runs after warm-up, in ms. VkFFT and cuFFT times are GPU times; MLX times are wall-clock times of
 `mx.eval`, so they include dispatch overhead.
 

@@ -296,7 +296,7 @@ GPU receives at 14–16 GB/s on four L40S that sit on three different NUMA nodes
 (`nvidia-smi topo`: every pair `SYS`). The bandwidth probe uses the same schedule, so the cost
 model sees the bandwidth the exchange will actually get.
 
-**Measured** on 4 L40S (PCIe, `esplhpc-cp075`). Synthetic inputs have the shapes of the benchmark
+**Measured** on 4 L40S (PCIe). Synthetic inputs have the shapes of the benchmark
 problems, 12 coils each. Each figure is the median of 2 runs after a warm-up, in seconds.
 
 | set-up (s) | 2D radial 320², $L = 72$, 8.6 GB | stack 320² × 56, $L = 12$, 14.3 GB | 3D 160³, $L = 12$, 20.5 GB |
@@ -349,7 +349,7 @@ back. Two choices keep it fast:
   same code serves both languages and multi-GPU. The coils are split over the GPUs as for the
   Toeplitz method; each GPU holds its own plans, Gram blocks and trajectory.
 
-**Measured** on one TITAN RTX (`pact400-recon3`), random inputs, per application of $A^H A$
+**Measured** on one TITAN RTX, random inputs, per application of $A^H A$
 (median of 5), against the Python reference `aha_nufft_plan` on the same inputs (relative
 difference ≤ 2.4·10⁻⁷):
 

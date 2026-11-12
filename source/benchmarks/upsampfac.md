@@ -34,13 +34,13 @@ Three settings compute the kernel faster on CUDA:
 | 3D (masked) | 2 | 1e-5 | auto | 12.6 s | 3.3e-6 |
 | 3D (masked) | 1.25 | 1e-4 | auto | 7.2 s | 4.8e-6 |
 
-* **Machine.** One TITAN RTX (`pact400-recon3`).
+* **Machine.** One TITAN RTX.
 * **Time** is the kernel computation inside `create_op` (minimum of two).
 * **Error** is one $A^HA$ application against the NUFFT operator (σ = 2, `eps` = 1e-6).
 * **Problems.** Those of the [main study](results.md). The 3D problem uses the default mask
   (`calc_mask`, radius 2); 2D and stack are unmasked.
 * **Script and raw numbers.**
   [`toep_upsampfac.py`](https://github.com/mikecjz/MR_AHA/blob/b4fb00c/benchmarks/toep_upsampfac.py);
-  `results/pact400-recon3/toep_upsampfac_<problem>.json`.
+  `results/titan_rtx/toep_upsampfac_<problem>.json`.
 
 The variables are experimental and not part of the API.

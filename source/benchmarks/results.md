@@ -16,16 +16,15 @@ inside the library: `create_op(..., method='nufft')`).
 >   trajectories; see [Neighbourhood mask](neighbour-mask.md). The kernel size is proportional to
 >   the kept fraction.
 
-Everything was run on two machines:
+Everything was run on two GPUs:
 
-| machine | GPU | software |
-|---|---|---|
-| local workstation `pact400-recon3` | NVIDIA TITAN RTX, 24 GB (Turing, sm_75) | CUDA 12.6 (nvcc), CuPy 14.2, cufinufft 2.5.1 (pip) for Python, cufinufft 2.6-dev (built from the `finufft/` submodule) for MATLAB R2025b |
-| HPC node `esplhpc-cp075` | NVIDIA L40S, 48 GB (Ada, sm_89) | CUDA 12.9 module, CuPy 14.2, cufinufft 2.5.1 (pip) for Python, the cufinufft MEX bundled in the `matlab_biri_v1.6` Singularity image for MATLAB R2025b |
+| GPU | software |
+|---|---|
+| NVIDIA TITAN RTX, 24 GB (Turing, sm_75) | CUDA 12.6 (nvcc), CuPy 14.2, cufinufft 2.5.1 (pip) for Python, cufinufft 2.6-dev (built from the `finufft/` submodule) for MATLAB R2025b |
+| NVIDIA L40S, 48 GB (Ada, sm_89) | CUDA 12.9 module, CuPy 14.2, cufinufft 2.5.1 (pip) for Python, the cufinufft MEX bundled in a Singularity image for MATLAB R2025b |
 
-Full per-machine tables, including every intermediate number, are in
-[`results/pact400-recon3/summary.md`](https://github.com/mikecjz/MR_AHA/blob/b4fb00c/benchmarks/results/pact400-recon3/summary.md) and
-[`results/esplhpc-cp075/summary.md`](https://github.com/mikecjz/MR_AHA/blob/b4fb00c/benchmarks/results/esplhpc-cp075/summary.md). The raw numbers are in the
+Full per-GPU tables, including every intermediate number, are in
+`results/titan_rtx/summary.md` and `results/l40s/summary.md`. The raw numbers are in the
 JSON files next to them.
 
 ## Summary
@@ -122,8 +121,8 @@ One-off pre-computation (`calc_toep`):
 | stack | 2.9 s | 2.9 s | 13.3 → 10.8 GB |
 | 3d | 20.3 s (masked only) | 7.6 s | 19.0 → 12.1 GB |
 
-On the HPC node every first-time plan or allocation carries about 0.1–0.15 s of overhead, which
-dominates its small 2D pre-computation times. Local plan creation takes milliseconds.
+On the L40S system every first-time plan or allocation carries about 0.1–0.15 s of overhead, which
+dominates its small 2D pre-computation times. On the TITAN RTX, plan creation takes milliseconds.
 
 ## CG, 20 iterations from zero
 
@@ -136,7 +135,7 @@ dominates its small 2D pre-computation times. Local plan creation takes millisec
 | 3d | TITAN RTX | 184.5 s | 175.3 s | does not fit | **35.1 s** (+20.3) |
 | 3d | L40S | 76.0 s | 68.6 s | **26.8 s** (+7.6) | 27.4 s (+7.1) |
 
-Relative differences between the CG solutions; both machines agree to the digits shown:
+Relative differences between the CG solutions; both GPUs agree to the digits shown:
 
 | problem | Toeplitz vs NUFFT (Py) | Toeplitz vs NUFFT (MATLAB) | NUFFT Py vs MATLAB | masked vs unmasked Toeplitz | error vs truth (all operators) |
 |---|---|---|---|---|---|
@@ -159,8 +158,8 @@ Toeplitz solution therefore lies within the spread of the NUFFT solutions themse
 
 ## Apple silicon (Metal backend)
 
-The same benchmark on a Mac Studio (Apple M3 Ultra, 512 GB unified memory) with the Metal backend
-is in [`results/AW650523HJY/summary.md`](https://github.com/mikecjz/MR_AHA/blob/b4fb00c/benchmarks/results/AW650523HJY/summary.md). In short:
+The same benchmark on an Apple M3 Ultra (512 GB unified memory) with the Metal backend
+is in `results/m3_ultra/summary.md`. In short:
 
 * **The Toeplitz operator is faster than on the L40S** for the large problems: one $A^HA$ takes
   0.84 s (stack) and 1.17 s (3D) against 0.94 s and 1.33 s, and the unmasked 3D kernel (20 GB)

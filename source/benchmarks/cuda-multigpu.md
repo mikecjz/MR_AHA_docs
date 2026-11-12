@@ -49,7 +49,7 @@ one coil at a time. The tables of the [main study](results.md) were measured wit
 
 ## Multi-GPU (H100 SXM, NVLink)
 
-Up to 3 GPUs of one node (`esplhpc-cp089`; more were not free), 12 coils, 369 GB/s measured
+Up to 3 H100 GPUs, 12 coils, 369 GB/s measured
 GPU-to-GPU:
 
 | problem | 1 GPU | 2 GPUs | 3 GPUs |
@@ -66,10 +66,9 @@ kernels) to 65 ms on three H100s.
 **Remainder split.** The split applies only when the coils do not divide over the GPUs. With 7
 coils on 3 GPUs it saves 4 % in 3D (65.7 → 63.0 ms). The automatic mode, a cost model timed at
 plan creation, enables the split there and keeps whole coils where they are faster, for example
-with 8 coils on 3 GPUs. The local TITAN RTX workstation has no GPU peer access (copies go
+with 8 coils on 3 GPUs. The TITAN RTX GPUs have no peer access (copies go
 through the host at ~4 GB/s), so the automatic mode keeps whole coils there.
 
-These runs were made with [`hpc/run_mgpu_h100.sh`](https://github.com/mikecjz/MR_AHA/blob/b4fb00c/benchmarks/hpc/run_mgpu_h100.sh)
+These runs were made with the batch script `run_mgpu_h100.sh`
 (`PART=test|single|bench|split|matlab`); the raw numbers are in
-[`results/esplhpc-cp089/`](https://github.com/mikecjz/MR_AHA/tree/b4fb00c/benchmarks/results/esplhpc-cp089) and
-[`results/pact400-recon3/`](https://github.com/mikecjz/MR_AHA/tree/b4fb00c/benchmarks/results/pact400-recon3) (`aha_cuda*.json`).
+`results/h100/` and `results/titan_rtx/` (`aha_cuda*.json`).

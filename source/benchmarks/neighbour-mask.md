@@ -4,7 +4,7 @@ This report tests the k-space mask of the masked Toeplitz operator: keep only th
 close to the samples. It measures how much of the upsampled grid the mask keeps at each radius and
 how accurate the masked operator is. CG convergence is not tested; only single-operator accuracy
 is. The code is [`neighbour_mask.py`](https://github.com/mikecjz/MR_AHA/blob/b4fb00c/benchmarks/neighbour_mask.py). Raw numbers are in
-`results/pact400-recon3/neighbour_mask_<problem>.json`, measured on a TITAN RTX.
+`results/titan_rtx/neighbour_mask_<problem>.json`, measured on a TITAN RTX.
 
 > **Outcome.** The neighbourhood mask is the library's `calc_mask`, with `mask_radius = 2` as the
 > default. The library implementation gives masks bit-identical to the CuPy reference used here.
