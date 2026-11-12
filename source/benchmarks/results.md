@@ -2,7 +2,7 @@
 
 This study benchmarks the speed and accuracy of the Toeplitz-embedded operator of MR_AHA
 (`mr_aha.create_op` in Python) against the NUFFT operator, which applies type-2 and type-1
-cufinufft transforms in every call (`mr_aha.AhANufftPlan` in Python, `AhA_cufinufft.m` in MATLAB;
+cufinufft transforms in every call (`mr_aha.aha_nufft_plan` in Python, `aha_nufft_plan` / `AhA_cufinufft` in MATLAB;
 inside the library: `create_op(..., method='nufft')`).
 
 > **Reading the Toeplitz numbers.** Two things are better in the current library than in these
@@ -175,7 +175,7 @@ is in [`results/AW650523HJY/summary.md`](https://github.com/mikecjz/MR_AHA/blob/
 ## Recommendations
 
 * **Use the Toeplitz operator for iterative reconstruction.** It wins at every size tested, even
-  counting `calc_toep`. Keep the NUFFT operators (`AhA_cufinufft`, `AhANufftPlan`) as an independent
+  counting `calc_toep`. Keep the NUFFT operators (`AhA_cufinufft`, `aha_nufft_plan`) as an independent
   reference.
 * **Use `is_masked = true` when memory is tight.** In 3D the kernel is the largest allocation.
   `calc_mask` with its default radius 2 cuts it by almost half (54 % of the grid kept) at the

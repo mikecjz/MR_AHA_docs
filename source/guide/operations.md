@@ -161,21 +161,26 @@ keeps every grid location within `config.mask_radius` (default 2) cells of a sam
 operator from MATLAB's `mr_aha.create_op` calls it when no mask is given; in Python and C, pass
 its result to `create_op`. See [Masking](masking.md).
 
-### `AhA_cufinufft` / `mr_aha.AhANufftPlan` — reference without Toeplitz
+### `aha_nufft_plan` — reference without Toeplitz
 
 ::::{tab-set-code}
 
 ```python
-plan = mr_aha.AhANufftPlan(cfg, traj)          # once per trajectory
-AhAx = plan.apply(x, SEs, phi2)                # every application
+plan = mr_aha.aha_nufft_plan(cfg, traj)        # once per trajectory
+AhAx = plan.apply(x, SEs, phi2)                # every application; plan.execute is an alias
 ```
 
 ```matlab
-plan = mr_nufft_plan(traj, config);             % once per trajectory
-AhAx = AhA_cufinufft(x, SEs, phi2, traj, config, plan);   % every application
+plan = aha_nufft_plan(traj, config);            % once per trajectory
+AhAx = plan.apply(x, SEs, phi2);                % every application; plan.execute is an alias
+delete(plan);                                   % frees the cufinufft plans
 ```
 
 ::::
+
+`aha_nufft_plan` has the same name and the same two steps in both languages: create a plan
+object for the trajectory, then apply it. For a single application, `mr_aha.aha_nufft` (Python)
+and `AhA_cufinufft` (MATLAB) build a plan, apply it once and release it.
 
 This is the same operator evaluated without the Toeplitz embedding, coil by coil: type-2
 cufinufft, one $L\times L$ block per readout, type-1 cufinufft. It is pure MATLAB / CuPy on top of
@@ -187,7 +192,6 @@ algorithm inside the library). All three agree to $\sim 10^{-6}$.
 cufinufft sorts the non-uniform points into bins on its fine grid, chooses the spreading
 parameters for the requested `eps`, and allocates its work arrays. The plan does this once, for
 one type-2 and one type-1 transform, and every application then only spreads, transforms and
-interpolates. Without a plan, each call repeats the set-up: MATLAB's `AhA_cufinufft` re-plans
-and re-sorts the trajectory when no `plan` is given. Inside an iterative reconstruction,
-build the plan once and reuse it. The Toeplitz path needs no plan per application, because
+interpolates. The one-shot functions repeat the set-up on every call, so inside an iterative
+reconstruction build the plan once and reuse it. The Toeplitz path needs no plan per application, because
 `calc_toep` uses the trajectory once and the result, `phi2_toep`, lives on a Cartesian grid.

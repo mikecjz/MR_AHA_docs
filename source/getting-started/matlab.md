@@ -44,8 +44,9 @@ The reference needs `-DMR_AHA_BUILD_CUFINUFFT_MATLAB=ON` and `build/finufft/matl
 or any other cufinufft MATLAB installation:
 
 ```matlab
-plan = mr_nufft_plan(traj, config);             % once: plans + point sorting
-AhAx = AhA_cufinufft(x, SEs, phi2, traj, config, plan);
+plan = aha_nufft_plan(traj, config);            % once: plans + point sorting
+AhAx = plan.apply(x, SEs, phi2);                % or plan.execute(x, SEs, phi2)
+delete(plan);
 ```
 
 ## What the wrappers do
@@ -66,5 +67,5 @@ creating any `gpuArray`, is enough. The wrappers do this implicitly by moving th
 ## Apple silicon
 
 On Apple silicon the same functions take ordinary MATLAB arrays, and no Parallel Computing
-Toolbox is needed. `calc_toep`, `mr_aha.create_op` and `AhA_cufinufft` run their NUFFTs through
+Toolbox is needed. `calc_toep`, `mr_aha.create_op` and `aha_nufft_plan` run their NUFFTs through
 MATLAB's Python interface. See [Apple silicon](../guide/apple-silicon.md).

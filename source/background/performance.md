@@ -350,10 +350,10 @@ back. Two choices keep it fast:
   Toeplitz method; each GPU holds its own plans, Gram blocks and trajectory.
 
 **Measured** on one TITAN RTX (`pact400-recon3`), random inputs, per application of $A^H A$
-(median of 5), against the Python reference `AhANufftPlan` on the same inputs (relative
+(median of 5), against the Python reference `aha_nufft_plan` on the same inputs (relative
 difference ≤ 2.4·10⁻⁷):
 
-| problem | `AhANufftPlan` | `create_op(..., method='nufft')` |
+| problem | `aha_nufft_plan` | `create_op(..., method='nufft')` |
 |---|---|---|
 | 2D 256², $L = 40$, 8 coils, 400 × 512 samples | 173.5 ms | 146.2 ms |
 | 2D 320², $L = 72$, 4 coils, 754 × 320 samples | 206.3 ms | 170.4 ms |

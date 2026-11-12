@@ -21,7 +21,7 @@ backend is validated piece by piece:
 | `aha` | `aha_toeplitz` with each stored kernel (lower/upper, unmasked and masked) |
 | `toep` | `calc_toep` on the stored Gram blocks and trajectory |
 | `mask` | `calc_mask` (the mask must match exactly) |
-| `nufft` | the NUFFT reference operator `AhANufftPlan` |
+| `nufft` | the NUFFT reference operator `aha_nufft_plan` |
 | `op` | `create_op` with both methods |
 
 `tests/check_reference_matlab.m` does the same through the MATLAB interface;
@@ -53,7 +53,7 @@ On one GPU:
 
 * a Toeplitz operator with an injected kernel is bit-identical to `aha_toeplitz`;
 * with its own kernel it matches `calc_toep` and `aha_toeplitz` to cufinufft's run-to-run noise;
-* the NUFFT method matches `AhANufftPlan` to `1e-5`.
+* the NUFFT method matches `aha_nufft_plan` to `1e-5`.
 
 Multi-GPU, it checks every `toep_dist`, the remainder split by rank, the kernel copies on
 every GPU, memory leaks, and a forced allocation failure on another GPU.

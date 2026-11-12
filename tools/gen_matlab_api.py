@@ -24,7 +24,7 @@ from pathlib import Path
 #: Functions shown first on the index page, in this order; the remaining
 #: files follow alphabetically under "Helpers".
 MAIN = ["mr_aha", "mr_default_config", "calc_toep", "AhA_Toeplitz",
-        "calc_mask", "mr_nufft_plan", "AhA_cufinufft", "mr_backend"]
+        "calc_mask", "aha_nufft_plan", "AhA_cufinufft", "mr_backend"]
 
 
 def parse(path: Path) -> tuple:

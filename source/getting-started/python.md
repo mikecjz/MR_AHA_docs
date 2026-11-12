@@ -108,7 +108,7 @@ op_nu  = mr_aha.create_op(cfg_nu, SEs, phi2, traj, method="nufft")
 
 ## NUFFT reference
 
-`mr_aha.AhANufftPlan` evaluates the same operator with type-2 / type-1 cufinufft transforms and
+`mr_aha.aha_nufft_plan` evaluates the same operator with type-2 / type-1 cufinufft transforms and
 no Toeplitz embedding. It is pure CuPy on top of the `cufinufft` package and uses no MR_AHA C
 code. That makes it the **independent reference** the tests validate both methods of `create_op`
 against (`method="nufft"` runs the same algorithm inside the library). Use `create_op` for
@@ -118,9 +118,9 @@ It needs `pip install cufinufft`. The cufinufft wheel expects `libcudart.so.12` 
 path: load your CUDA module or install `nvidia-cuda-runtime-cu12`.
 
 ```python
-with mr_aha.AhANufftPlan(cfg, traj, type1_opts={"gpu_method": 1},
-                         type2_opts={"gpu_method": 2}) as ref:
-    y_ref = ref.apply(x, SEs, phi2)    # agrees with create_op(...)(x) to ~1e-6
+with mr_aha.aha_nufft_plan(cfg, traj, type1_opts={"gpu_method": 1},
+                           type2_opts={"gpu_method": 2}) as ref:
+    y_ref = ref.apply(x, SEs, phi2)    # or ref.execute(...); agrees with create_op(...)(x) to ~1e-6
 ```
 
 ## Low-level primitives
