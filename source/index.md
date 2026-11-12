@@ -112,9 +112,7 @@ Performance notes <background/performance>
 
 Overview <benchmarks/index>
 Main study <benchmarks/results>
-Masking threshold <benchmarks/masking>
 Neighbourhood mask <benchmarks/neighbour-mask>
-Sparse trajectories <benchmarks/spiral>
 CUDA optimisation and multi-GPU <benchmarks/cuda-multigpu>
 NUFFT upsampling factor <benchmarks/upsampfac>
 VkFFT on Metal <benchmarks/vkfft>

@@ -6,7 +6,7 @@ experimental environment variables `MR_AHA_TOEP_UPSAMPFAC` (σ, default 2.0) and
 [`toep_upsampfac.py`](https://github.com/mikecjz/MR_AHA/blob/b4fb00c/benchmarks/toep_upsampfac.py) sweeps σ ∈ {2, 1.25}, `eps` ∈ {1e-6, 1e-5, 1e-4} and
 method ∈ {auto, 1 = GM-sort} on one TITAN RTX (`pact400-recon3`). Time is the kernel computation
 inside `create_op` (minimum of two); the error is one $A^HA$ application against the NUFFT operator
-(σ = 2, `eps` = 1e-6). The 3D problem uses the default neighbourhood mask; 2D and stack are
+(σ = 2, `eps` = 1e-6). The 3D problem uses the default mask (`calc_mask`, radius 2); 2D and stack are
 unmasked. Raw numbers: `results/pact400-recon3/toep_upsampfac_<problem>.json`.
 
 | problem | eps | method | σ = 2 (default) | σ = 1.25 |

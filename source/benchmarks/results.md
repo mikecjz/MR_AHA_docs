@@ -3,13 +3,13 @@
 This study benchmarks the speed and accuracy of the Toeplitz-embedded operator of MR_AHA
 (`mr_aha.create_op`, Python; `mr_aha.AhAPlan` when these runs were made) against the "vanilla"
 operator that applies type-2 and type-1 cufinufft transforms in every call (`mr_aha.AhANufftPlan` in
-Python, `AhA_cufinufft.m` in MATLAB; inside the library: `create_op(..., method='nufft')`). The experiment behind the threshold of the automatic k-space mask (`calc_mask`) is in
-[Masking threshold experiment](masking.md).
+Python, `AhA_cufinufft.m` in MATLAB; inside the library: `create_op(..., method='nufft')`).
 
-> **Mask default changed after these runs.** `calc_mask` now defaults to the neighbourhood mask
-> (`mask_method = 'neighbour'`, `mask_radius = 2`); see [Neighbourhood mask vs. kernel-threshold mask](neighbour-mask.md).
-> Every "masked" result of this study used the kernel-threshold method at 0.05, which is still
-> available as `mask_method = 'threshold'`.
+> **Masks of this study.** The "masked" runs were made before the current `calc_mask`. Their masks
+> kept 83 % (2D), 81 % (stack) and 64 % (3D) of the upsampled grid. Today's `calc_mask` (every
+> location within `mask_radius = 2` cells of a sample) keeps 80 %, 79 % and 54 % on the same
+> trajectories; see [Neighbourhood mask](neighbour-mask.md). The kernel size is proportional to
+> the kept fraction.
 
 Everything was run on two machines:
 
@@ -41,16 +41,18 @@ JSON files next to them.
   its cufinufft build is newer, since the Python wheel is 2.5.1. Python is 12–17 % faster in 2D.
   Selecting cufinufft's `gpu_method` per transform type matters more than the language: it is worth
   1.4–1.9× in 2D and stack. The default settings are always reported alongside the tuned ones.
-* **Masking (`calc_mask`, default threshold 0.05) saves memory, not time.** It keeps 83 % (2D),
-  81 % (stack) and 64 % (3D) of the upsampled grid. The kernel shrinks by 17–36 %, which is what
-  lets the 3D problem run on the 24 GB TITAN at all: unmasked it needs 19 GB of kernel. The CG
-  solution moves by only 2·10⁻⁵. One masked application is *not* faster, for reasons explained in
-  [Masking](masking.md).
-* **For a sparse trajectory the mask saves far more.** With a two-arm spiral it keeps only
-  6–11 % of the grid at N = 256–384, so the stack-of-spirals kernel (320² × 56, L = 12) shrinks
-  **12×**, from 13.3 GB to 1.1 GB. The masked $A^HA$ is also 1.7× faster than the unmasked one. The
-  catch is accuracy: at 0.05 the operator error is 10⁻³, not 10⁻⁶; threshold 0.01 brings it to
-  10⁻⁴ and still saves 2.5×. See [Sparse trajectories](spiral.md).
+* **Masking saves memory, not time.** The masks of this study kept 83 % (2D), 81 % (stack) and
+  64 % (3D) of the upsampled grid. The kernel shrinks by 17–36 %, which is what lets the 3D problem
+  run on the 24 GB TITAN at all: unmasked it needs 19 GB of kernel. The CG solution moves by only
+  2·10⁻⁵. One masked application was *not* faster in these runs. The masked execute path gathered
+  the retained locations into a compact buffer, multiplied them, zeroed the *whole* padded grid and
+  scattered the result back. That cost about as much as the dense in-place multiply it replaced,
+  and the two padded FFTs, which masking does not touch, dominate the operator anyway. (That path
+  has since been replaced; see the recommendations below.)
+* **For a sparse trajectory the mask saves far more, at a price in accuracy.** With a two-arm
+  spiral on a 256² matrix, a radius of 2 keeps only 4 % of the grid and a radius of 8 keeps 14 %.
+  The operator error is then 3·10⁻² and 3·10⁻³, not 10⁻⁶. See
+  [Neighbourhood mask](neighbour-mask.md).
 
 ## Problems
 
@@ -92,8 +94,8 @@ the reconstruction is only physically right with the shift.
 * **Tuning.** "Tuned" picks the fastest (type-1, type-2) `gpu_method` pair out of {1, 2}² for each
   dataset and machine.
 * **Toeplitz operator.** `mr_aha.calc_toep` once, then the then `AhAPlan.apply` (today:
-  `mr_aha.create_op`, which computes the same kernel inside). "Masked" uses
-  `mr_aha.calc_mask` with the threshold method at 0.05, which was the default at the time.
+  `mr_aha.create_op`, which computes the same kernel inside). "Masked" uses the masks described
+  in the note at the top of this page.
 * **Timing.** Wall time with device synchronisation, after a warm-up call. The median of 20 (2D)
   or 5 (stack, 3D) calls is reported.
 * **CG.** Plain conjugate gradient from $u_0 = 0$, exactly 20 iterations, no stopping test. The
@@ -174,13 +176,13 @@ is in [`results/AW650523HJY/summary.md`](https://github.com/mikecjz/MR_AHA/blob/
 * **Use the Toeplitz operator for iterative reconstruction.** It wins at every size tested, even
   counting `calc_toep`. Keep the NUFFT operators (`AhA_cufinufft`, `AhANufftPlan`) as an independent
   reference.
-* **Use `is_masked = true` when memory is tight.** In 3D the kernel is the largest allocation. The
-  threshold mask at 0.05 cuts it by about a third at negligible accuracy cost. The neighbourhood
-  mask with r = 2, now the default, cuts it by almost half at the same accuracy.
-* **Sparse trajectories (few spiral arms, few shots): pick the threshold for the accuracy you
-  need.** 0.05 gives a 10–15× smaller kernel at about 10⁻³ operator error; 0.01 gives 2–3× at
-  10⁻⁴. Also pass a small `mem_fraction` so that `calc_toep`'s transient memory stays close to the
-  masked kernel's size.
+* **Use `is_masked = true` when memory is tight.** In 3D the kernel is the largest allocation.
+  `calc_mask` with its default radius 2 cuts it by almost half (54 % of the grid kept) at the
+  accuracy of the unmasked operator.
+* **Sparse trajectories (few spiral arms, few shots): pick `mask_radius` for the accuracy you
+  need.** On the two-arm spiral, radius 2 keeps 4 % of the grid at 3·10⁻² operator error and
+  radius 8 keeps 14 % at 3·10⁻³; see [Neighbourhood mask](neighbour-mask.md). Also pass a small
+  `mem_fraction` so that `calc_toep`'s transient memory stays close to the masked kernel's size.
 * **The faster masked execute path is implemented (2026-11).** The gather / memset / scatter passes
   were replaced by one in-place pass over the padded grid through an `int32` index map (−1 outside
   the mask), so masked operators are now 3–11 % faster than unmasked ones instead of slower; see

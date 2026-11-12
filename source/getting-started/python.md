@@ -53,7 +53,6 @@ and no data is ever moved.
 | `phi2[Ntrajs, L, L]`         | `phi2[L, L, Ntrajs]`       |
 | `phi2[Ntrajs, Nkz, L, L]`    | `phi2[L, L, Nkz, Ntrajs]`  |
 | `traj[Ntrajs, Nkx, ndim]`    | `traj[ndim, Nkx, Ntrajs]`  |
-| `mask_kernel[Mx, My, Mz]`    | `mask_kernel[Mz, My, Mx]`  |
 
 **Gram blocks** follow MR-Multitasking: `phi2` holds `Phi_rt(:,idx) * Phi_rt(:,idx)'`
 of the rank x time basis, and every block multiplies the rank coefficients of a
@@ -96,12 +95,9 @@ Options of `create_op`:
 holds on its `k`-th GPU (e.g. to save it).
 
 Masked operators keep `phi2_toep` only at selected upsampled k-space samples
-(Toeplitz method only). `calc_mask` derives them from the trajectory. By
-default it keeps every grid location within `mask_radius=2` cells of a sample.
-With `mask_method="threshold"` it thresholds the unit-weight Toeplitz kernel at
-`mask_threshold` (absolute, in samples, default 0.05) instead. Per call,
-`calc_mask(cfg, traj, radius=...)` or `threshold=...` overrides the configured
-method:
+(Toeplitz method only). `calc_mask` derives them from the trajectory: it
+keeps every grid location within `mask_radius=2` cells of a sample. Per call,
+`calc_mask(cfg, traj, radius=...)` overrides the configured radius:
 
 ```python
 cfg  = mr_aha.make_config("stack", (256, 256, 64), L=16, n_coils=8, is_masked=True)

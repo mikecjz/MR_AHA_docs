@@ -39,7 +39,7 @@ $[-\pi, \pi)$ range.
 | `is_masked` | whether `phi2_toep` is stored only at selected upsampled samples |
 
 Optional: `n_coils`, `num_masked`, `eps`, `mem_fraction`, `gpu_device_id`, `verbose`,
-`mask_method` (`'neighbour'` or `'threshold'`), `mask_radius`, `mask_threshold`. The MATLAB
+`mask_radius`. The MATLAB
 helper `mr_default_config` and the Python `mr_aha.make_config` fill in sensible defaults.
 
 ## Gram blocks (MR-Multitasking convention)

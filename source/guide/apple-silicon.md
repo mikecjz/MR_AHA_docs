@@ -9,17 +9,17 @@ an M3 Ultra). It is selected automatically on macOS (`MR_AHA_BACKEND=METAL`).
 |---|---|---|
 | kernels | `src/cuda/*.cu` | `src/metal/mr_kernels.metal` (same indexing, ported kernel by kernel) |
 | FFT | cuFFT | [VkFFT](https://github.com/DTolm/VkFFT)'s Metal backend (`third_party/VkFFT`) |
-| type-1 NUFFT (`calc_toep`, threshold mask) | cufinufft, inside the library | [mlx-nufft](https://github.com/martinlachaine/mlx-nufft), in Python (`third_party/mlx-nufft`) |
+| type-1 NUFFT (`calc_toep`) | cufinufft, inside the library | [mlx-nufft](https://github.com/martinlachaine/mlx-nufft), in Python (`third_party/mlx-nufft`) |
 | arrays | device pointers (gpuArray, CuPy) | host pointers in unified memory (MATLAB arrays, NumPy) |
 | MATLAB | gpuArray MEX gateways | host-array MEX gateways (`matlab/metal/`) + MATLAB's Python interface |
 
 There is no C/C++ NUFFT for Apple GPUs, so the Toeplitz pre-computation is split in two:
 `mr_aha.calc_toep` (Python) evaluates the type-1 NUFFT of each triangular component with mlx-nufft,
 then the library's `mr_calc_toep_from_psf` performs the inverse FFT, scaling and mask gather on the
-GPU. The threshold mask works the same way through `mr_calc_mask_from_kernel`. The C function
+GPU. The C function
 `mr_calc_toep` returns `MR_ERR_UNSUPPORTED` on Metal with directions; the operator itself
-(`mr_aha_plan_*`, `mr_aha_toeplitz`) and the neighbourhood mask (`mr_calc_mask`) are complete in C.
-Both new functions also exist in the CUDA backend.
+(`mr_aha_plan_*`, `mr_aha_toeplitz`) and the mask (`mr_calc_mask`, which needs no NUFFT) are
+complete in C. `mr_calc_toep_from_psf` also exists in the CUDA backend.
 
 **Requirements.** macOS 13 or newer on Apple silicon, CMake ≥ 3.24, Apple clang (Xcode or its
 Command Line Tools), Python 3.11/3.12 with `numpy`, `mlx==0.31.2` and mlx-nufft. Optional: Xcode's
@@ -43,9 +43,9 @@ in-process (or the interpreter named by `MR_AHA_PYTHON`) the first time a NUFFT 
 **Validation.** `tests/check_reference.py` and `tests/check_reference_matlab.m` (via
 `tests/run_matlab_tests.m`) compare every public function with CUDA reference outputs
 (`tests/make_reference.py`): 2D, 3D and stack-of-stars, odd sizes and a prime FFT length,
-L = 1, 3, 4, both triangulations, unmasked and both masks. The operator matches CUDA to 2-3e-7; the
-operator built by the mlx-nufft `calc_toep` matches the stored one to 0.8-1.9e-6; the neighbourhood
-mask is identical.
+L = 1, 3, 4, both triangulations, unmasked and masked. The operator matches CUDA to 2-3e-7; the
+operator built by the mlx-nufft `calc_toep` matches the stored one to 0.8-1.9e-6; the mask is
+identical.
 
 **VkFFT fork.** `third_party/VkFFT` points to [mikecjz/VkFFT](https://github.com/mikecjz/VkFFT)
 (branch `mr_aha`): upstream `develop` plus two Metal fixes, an autorelease double free

@@ -403,7 +403,7 @@ The two multi-GPU tests below (and `tests/check_mgpu.py`) were replaced by `test
 records are kept as they were measured.
 
 - `tests/check_toep_mgpu.py` (4 L40S): multi-GPU `phi2_toep` vs single-GPU in 1092 combinations
-  (every reference problem: 2D/stack/3D, odd sizes, both triangles, unmasked and both masks,
+  (every reference problem: 2D/stack/3D, odd sizes, both triangles, unmasked and masked,
   L = 1 with fewer components than GPUs; plus synthetic L = 12 and L = 72; 2, 3 and 4 GPUs; every
   `MR_AHA_TOEP_SPLIT` mode; both `calc_toep(devices=...)` and `from_gram`):
   - worst kernel difference 3.5·10⁻⁷ (cufinufft's run-to-run noise), 3.3·10⁻⁷ against the stored

@@ -18,9 +18,9 @@ backend is validated piece by piece:
 
 | Stage | What is compared |
 |---|---|
-| `aha` | `aha_toeplitz` with each stored kernel (lower/upper, unmasked and both masks) |
+| `aha` | `aha_toeplitz` with each stored kernel (lower/upper, unmasked and masked) |
 | `toep` | `calc_toep` on the stored Gram blocks and trajectory |
-| `mask` | `calc_mask_kernel` and `calc_mask` (both methods) |
+| `mask` | `calc_mask` (the mask must match exactly) |
 | `nufft` | the NUFFT reference operator `AhANufftPlan` |
 | `op` | `create_op` with both methods |
 

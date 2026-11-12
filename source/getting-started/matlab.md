@@ -41,5 +41,5 @@ The `.m` wrappers move host arrays to the GPU, cast to complex `single`, derive 
 > simply creating any `gpuArray`, is enough; the wrappers do this implicitly by moving their inputs.
 
 On Apple silicon the same functions take ordinary MATLAB arrays (no Parallel Computing Toolbox);
-`calc_toep`, the `'threshold'` mask, `mr_aha.create_op` and `AhA_cufinufft` run their NUFFTs
+`calc_toep`, `mr_aha.create_op` and `AhA_cufinufft` run their NUFFTs
 through MATLAB's Python interface. See [Apple silicon](../guide/apple-silicon.md).

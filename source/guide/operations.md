@@ -73,10 +73,8 @@ applies the same pipeline with its buffers kept between applications.
 mask = calc_mask(traj, config)
 ```
 
-Derives the upsampled k-space locations worth keeping from the trajectory alone. By default it keeps
-every grid location within `config.mask_radius` (default 2) cells of a sample. The alternative
-`config.mask_method = 'threshold'` thresholds the trajectory's unit-weight Toeplitz kernel at
-`config.mask_threshold`. See [Masking](masking.md).
+Derives the upsampled k-space locations worth keeping from the trajectory alone: it keeps every
+grid location within `config.mask_radius` (default 2) cells of a sample. See [Masking](masking.md).
 
 ## `AhA_cufinufft` / `mr_aha.AhANufftPlan` — reference without Toeplitz
 

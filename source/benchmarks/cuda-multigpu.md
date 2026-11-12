@@ -17,8 +17,8 @@ the mechanisms are explained in
 Inputs are constant arrays, timing is the median of 5 (single GPU) or 10 (multi-GPU) calls
 ([`bench_aha_backend.py`](https://github.com/mikecjz/MR_AHA/blob/b4fb00c/benchmarks/bench_aha_backend.py), [`bench_mgpu.py`](https://github.com/mikecjz/MR_AHA/blob/b4fb00c/benchmarks/bench_mgpu.py)). "Before" is
 the same build with `MR_AHA_CUDA_GENERIC_BD=1`, i.e. the generic kernels one coil at a time, which
-is the previous operator. The masked runs use a centred disc/ball with the threshold mask's kept
-fraction.
+is the previous operator. The masked runs use a centred disc/ball that keeps the same fraction of
+the grid as the masks of the [main study](results.md).
 
 ## One GPU
 
