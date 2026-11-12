@@ -54,11 +54,7 @@ $$\Phi_2 = \sum_{t\,\in\,\text{readout}} \Phi(:,t)\,\Phi(:,t)^H, \qquad
 Every block multiplication (by `phi2` in the NUFFT reference operators, by `phi2_toep` in the
 Toeplitz operator) treats the $L$ rank coefficients of one k-space location as a **row vector
 multiplied from the right**, $v \leftarrow v\,\Phi_2$, i.e. $v_l \leftarrow \sum_m v_m (\Phi_2)_{ml}$ —
-in MATLAB, `reshape(k, [], L) * Phi2`. This is the normal operator of a model whose adjoint
-applies the basis as `k.' * Phi_rt'`. Gram blocks stored as `[L, L, Ntrajs, Nz]` are passed
-unchanged apart from the dimension order: `permute(Phi2, [3 4 1 2])` in MATLAB, or the
-row-major `P.transpose(2, 3, 0, 1)` of the h5py array in Python (plus an `fftshift` along kz if it is
-in natural order).
+in MATLAB, `reshape(k, [], L) * Phi2`.
 
 ## Triangular packing
 
