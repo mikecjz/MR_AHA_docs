@@ -13,22 +13,37 @@ The library offers its operations at two levels:
 
 ## Packaged operation: `create_op` and apply
 
-::::{tab-set-code}
+::::{tab-set}
+
+:::{tab-item} Python
+:sync: python
 
 ```python
 op = mr_aha.create_op(cfg, SEs, phi2, traj, ...)
 AhAx = op(x)
 ```
 
+:::
+
+:::{tab-item} MATLAB
+:sync: matlab
+
 ```matlab
 op = mr_aha.create_op(SEs, phi2, traj, config, ...);
 AhAx = op * x;
 ```
 
+:::
+
+:::{tab-item} C/C++
+:sync: c
+
 ```c
 mr_op_create(&cfg, &inputs, &options, &op);
 mr_op_execute(op, d_x, d_AhAx);
 ```
+
+:::
 
 ::::
 
@@ -59,20 +74,35 @@ same operator.
 
 ### `calc_toep` — one-off pre-computation
 
-::::{tab-set-code}
+::::{tab-set}
+
+:::{tab-item} Python
+:sync: python
 
 ```python
 phi2_toep = mr_aha.calc_toep(cfg, phi2, traj)          # unmasked
 phi2_toep = mr_aha.calc_toep(cfg, phi2, traj, mask)    # masked
 ```
 
+:::
+
+:::{tab-item} MATLAB
+:sync: matlab
+
 ```matlab
 phi2_toep = calc_toep(phi2, traj, config);
 ```
 
+:::
+
+:::{tab-item} C/C++
+:sync: c
+
 ```c
 mr_calc_toep(&cfg, d_phi2, d_traj, Ntrajs, Nkx, d_mask, d_phi2_toep);
 ```
+
+:::
 
 ::::
 
@@ -106,21 +136,36 @@ GPUs; see [Multi-GPU](multi-gpu.md).
 
 ### `AhA_Toeplitz` — the hot loop
 
-::::{tab-set-code}
+::::{tab-set}
+
+:::{tab-item} Python
+:sync: python
 
 ```python
 AhAx = mr_aha.aha_toeplitz(cfg, x, SEs, phi2_toep)
 AhAx = mr_aha.aha_toeplitz(cfg, x, SEs, phi2_toep, mask)
 ```
 
+:::
+
+:::{tab-item} MATLAB
+:sync: matlab
+
 ```matlab
 AhAx = AhA_Toeplitz(x, SEs, phi2_toep, config);
 AhAx = AhA_Toeplitz(x, SEs, phi2_toep, config, mask);
 ```
 
+:::
+
+:::{tab-item} C/C++
+:sync: c
+
 ```c
 mr_aha_toeplitz(&cfg, d_x, d_SEs, d_phi2_toep, d_mask, d_AhAx);   /* d_mask = NULL when unmasked */
 ```
+
+:::
 
 ::::
 
@@ -140,19 +185,34 @@ operator applies the same pipeline, with its buffers kept between applications.
 
 ### `calc_mask` — automatic mask for the masked operator
 
-::::{tab-set-code}
+::::{tab-set}
+
+:::{tab-item} Python
+:sync: python
 
 ```python
 mask = mr_aha.calc_mask(cfg, traj)
 ```
 
+:::
+
+:::{tab-item} MATLAB
+:sync: matlab
+
 ```matlab
 mask = calc_mask(traj, config);
 ```
 
+:::
+
+:::{tab-item} C/C++
+:sync: c
+
 ```c
 mr_calc_mask(&cfg, d_traj, Ntrajs, Nkx, d_mask, &num_masked);
 ```
+
+:::
 
 ::::
 
@@ -163,18 +223,28 @@ its result to `create_op`. See [Masking](masking.md).
 
 ### `aha_nufft_plan` — reference without Toeplitz
 
-::::{tab-set-code}
+::::{tab-set}
+
+:::{tab-item} Python
+:sync: python
 
 ```python
 plan = mr_aha.aha_nufft_plan(cfg, traj)        # once per trajectory
 AhAx = plan.apply(x, SEs, phi2)                # every application; plan.execute is an alias
 ```
 
+:::
+
+:::{tab-item} MATLAB
+:sync: matlab
+
 ```matlab
 plan = aha_nufft_plan(traj, config);            % once per trajectory
 AhAx = plan.apply(x, SEs, phi2);                % every application; plan.execute is an alias
 delete(plan);                                   % frees the cufinufft plans
 ```
+
+:::
 
 ::::
 

@@ -30,7 +30,10 @@ Build the library ([Installation](getting-started/install.md)), then create the 
 from the sensitivity maps `SEs`, the Gram blocks `phi2` and the trajectory `traj`, and apply it
 as often as needed, for example inside conjugate gradient.
 
-::::{tab-set-code}
+::::{tab-set}
+
+:::{tab-item} Python
+:sync: python
 
 ```python
 import mr_aha
@@ -42,6 +45,11 @@ with mr_aha.create_op(cfg, SEs, phi2, traj) as op:   # Toeplitz kernel computed 
         AhAx = op(x)
 ```
 
+:::
+
+:::{tab-item} MATLAB
+:sync: matlab
+
 ```matlab
 config = mr_default_config('stack', [320 320 56], 16);
 
@@ -51,6 +59,8 @@ for it = 1:n_iter
 end
 delete(op);                                          % frees the GPU memory
 ```
+
+:::
 
 ::::
 

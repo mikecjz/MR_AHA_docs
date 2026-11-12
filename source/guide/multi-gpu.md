@@ -16,12 +16,10 @@ gathers the partial outputs. Both methods work this way:
   coils' maps. There is no kernel, so the memory per GPU is far smaller. Set-up is plan creation
   on every GPU.
 
-```matlab
-op   = mr_aha.create_op(SEs, phi2, traj, config, 'devices', 1:4);   % 1-based gpuDevice indices
-AhAx = op * x;                                                         % or op.apply(x)
-info = op.info();                                                      % devices, coils, timings
-delete(op);
-```
+::::{tab-set}
+
+:::{tab-item} Python
+:sync: python
 
 ```python
 with mr_aha.create_op(cfg, SEs, phi2, traj, devices=[0, 1, 2, 3]) as op:   # or devices="all"
@@ -29,11 +27,32 @@ with mr_aha.create_op(cfg, SEs, phi2, traj, devices=[0, 1, 2, 3]) as op:   # or 
     print(op.info)
 ```
 
+:::
+
+:::{tab-item} MATLAB
+:sync: matlab
+
+```matlab
+op   = mr_aha.create_op(SEs, phi2, traj, config, 'devices', 1:4);   % 1-based gpuDevice indices
+AhAx = op * x;                                                         % or op.apply(x)
+info = op.info();                                                      % devices, coils, timings
+delete(op);
+```
+
+:::
+
+:::{tab-item} C/C++
+:sync: c
+
 ```c
 int devs[4] = {0, 1, 2, 3};
 opt.devices = devs; opt.n_devices = 4;          /* or n_devices = MR_OP_ALL_DEVICES */
 mr_op_create(&cfg, &in, &opt, &op);
 ```
+
+:::
+
+::::
 
 ## How the operator uses the GPUs
 

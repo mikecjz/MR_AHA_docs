@@ -6,16 +6,30 @@
 that builds a test problem, creates the operator with each method on one GPU or multi-GPU, and
 prints the set-up time and the time of one $A^H A$:
 
+::::{tab-set}
+
+:::{tab-item} Python
+:sync: python
+
 ```bash
 git clone --recurse-submodules https://github.com/mikecjz/MR_AHA_benchmarks.git
 cd MR_AHA_benchmarks/python
 python bench_aha.py --problem stack --gpus 1 2 4
 ```
 
+:::
+
+:::{tab-item} MATLAB
+:sync: matlab
+
 ```matlab
 cd MR_AHA_benchmarks/matlab
 bench_aha('problem', 'stack', 'gpus', [1 2 4])
 ```
+
+:::
+
+::::
 
 | Method | What runs | GPUs |
 |---|---|---|
