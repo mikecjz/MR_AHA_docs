@@ -51,6 +51,7 @@ The pages of this section record the measurements made while the library was dev
 | [CUDA optimisation and multi-GPU](cuda-multigpu.md) | the default CUDA kernels against the generic ones, and multi-GPU scaling on H100s |
 | [NUFFT upsampling factor](upsampfac.md) | experimental NUFFT settings that compute the Toeplitz kernel faster |
 | [VkFFT on Metal](vkfft.md) | whether VkFFT's Metal backend is accurate and fast enough |
+| [Other libraries](other-libraries.md) | MR_AHA against BART and MRISubspaceRecon.jl: one $A^H A$, 20 CG iterations, memory and accuracy, on a TITAN RTX, an L40S and an H100 |
 
 ```{note}
 These studies were run with scripts that lived in the `benchmarks/` folder of MR_AHA, which

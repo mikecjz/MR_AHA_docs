@@ -126,6 +126,7 @@ Neighbourhood mask <benchmarks/neighbour-mask>
 CUDA optimisation and multi-GPU <benchmarks/cuda-multigpu>
 NUFFT upsampling factor <benchmarks/upsampfac>
 VkFFT on Metal <benchmarks/vkfft>
+Other libraries <benchmarks/other-libraries>
 ```
 
 ```{toctree}

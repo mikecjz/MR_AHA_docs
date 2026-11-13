@@ -147,5 +147,53 @@ def _add_overview_link(app, pagename, templatename, context, doctree):
     context["furo_navigation_tree"] = tree[:end] + "\n" + item + tree[end:]
 
 
+#: Pages that are published but not listed: they are in no toctree (``orphan``
+#: front matter), carry ``<meta name="robots" content="noindex, nofollow">``,
+#: and are left out of the site's search index and of ``objects.inv`` below.
+#: Only a reader who has
+#: the URL finds them. The Markdown source is still in this public repository.
+UNLISTED_PAGES = {"benchmarks/why-bart-slower"}
+
+
+def _skip_unlisted_in_search(app):
+    """Keep :data:`UNLISTED_PAGES` out of ``searchindex.js``.
+
+    Sphinx has no per-page switch for its search index, so the HTML builder's
+    ``index_page`` (which feeds one page to the indexer) is wrapped to skip
+    those pages.
+    """
+    builder = app.builder
+    if not hasattr(builder, "index_page"):
+        return
+    index_page = builder.index_page
+
+    def index_listed_only(pagename, doctree, title):
+        if pagename not in UNLISTED_PAGES:
+            index_page(pagename, doctree, title)
+
+    builder.index_page = index_listed_only
+
+
+def _hide_unlisted_from_inventory():
+    """Keep :data:`UNLISTED_PAGES` out of ``objects.inv``.
+
+    The inventory lists every document (``std:doc``) and label for
+    intersphinx and similar tools; this filters the standard domain's
+    objects by document name.
+    """
+    from sphinx.domains.std import StandardDomain  # noqa: PLC0415
+
+    get_objects = StandardDomain.get_objects
+
+    def listed_objects(self):
+        for obj in get_objects(self):
+            if obj[3] not in UNLISTED_PAGES:   # (name, dispname, type, docname, anchor, prio)
+                yield obj
+
+    StandardDomain.get_objects = listed_objects
+
+
 def setup(app):
+    _hide_unlisted_from_inventory()
     app.connect("html-page-context", _add_overview_link, priority=900)
+    app.connect("builder-inited", _skip_unlisted_in_search)
