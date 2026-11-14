@@ -12,11 +12,6 @@ section#mr-aha > h1 {
   border: 0;
 }
 
-/* No background on the heading a link's #anchor points to (Furo shades it). */
-body {
-  --color-highlight-on-target: transparent !important;
-}
-
 /* Highlighter-pen mark: a slightly skewed yellow stroke behind the text. */
 mark.highlighter {
   color: inherit;
