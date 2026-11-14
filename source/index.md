@@ -15,12 +15,16 @@ MR_AHA is a highly optimized GPU library for evaluating the forward normal opera
 NUFFT-based operator with the same interface is included as the reference.
 
 In the literature, most low-rank reconstructions, such as MR Multitasking, MR fingerprinting,
-T2 shuffling and GRASP-Pro, take an hour or more per data set. A few examples among many: a
-median of 71 minutes for cardiovascular MR Multitasking on a GPU workstation[^multitasking],
-over 4 hours for a whole-brain 3D MR fingerprinting subspace reconstruction in
-BART[^vista-mrf], about 60 minutes for T2 shuffling of the knee[^t2sh], and 6 to 9 hours per
-slice for GRASP-Pro DCE-MRI on a desktop CPU[^grasp-pro]. **MR_AHA aims to bring this down to
-seconds on modern GPU hardware.**
+T2 shuffling and GRASP-Pro, take an hour or more per data set. A few examples among many:
+
+- **MR Multitasking:** a median of 71 minutes for cardiovascular imaging on a GPU
+  workstation[^multitasking].
+- **MR fingerprinting:** over 4 hours for a whole-brain 3D subspace reconstruction in
+  BART[^vista-mrf].
+- **T2 shuffling:** about 60 minutes for the knee[^t2sh].
+- **GRASP-Pro:** 6 to 9 hours per slice for DCE-MRI on a desktop CPU[^grasp-pro].
+
+**MR_AHA aims to bring this down to seconds on modern GPU hardware.**
 
 [^multitasking]: A. G. Christodoulou et al., "Magnetic resonance multitasking for
     motion-resolved quantitative cardiovascular imaging," *Nature Biomedical Engineering*
