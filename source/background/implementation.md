@@ -46,7 +46,7 @@ the iteration allocates nothing:
 ## Block-diagonal stage (CUDA)
 
 This stage is the per-location multiplication by the Hermitian $L \times L$ block. It is bound by
-memory bandwidth, because it reads `phi2_toep`, the largest array of the operator. Three choices
+memory bandwidth, because it reads `phi2_toep`, the largest array of the operator. Four choices
 keep those reads to a minimum:
 
 - **Kernels specialised on $L$** (for $L \le 30$). The rank vectors stay in registers, and the
@@ -56,9 +56,15 @@ keep those reads to a minimum:
   shrinks, down to one coil, until its buffers fit `config.mem_fraction` of the free GPU memory.
 - **In-place masked kernel.** The masked variant multiplies in place on the padded grid, through
   a grid-to-mask index map.
+- **Tiled kernels** (for $30 < L \le 512$). The rank vectors no longer fit in registers, so a
+  thread block stages them in shared memory for a tile of 16 grid locations and up to 4 coils.
+  It copies the stored triangle from DRAM panel by panel, once for all of them. On `2d72`
+  ($L = 72$) this is 3 to 9 times faster than the generic kernels
+  ([details](performance.md#25-ranks-above-30-tiled-kernels)).
 
-For $L > 30$ the generic shared-memory kernels are used, one coil at a time; they are as fast
-there. Both kernel families agree to single-precision rounding (`tests/check_bd_kernels.py`).
+The generic shared-memory kernels, one coil at a time, remain as the fallback for a mask of more
+than 2³¹ locations. All three kernel families agree to single-precision rounding
+(`tests/check_bd_kernels.py`).
 
 Environment variables:
 
@@ -66,6 +72,8 @@ Environment variables:
 |---|---|---|
 | `MR_AHA_CUDA_COIL_GROUP=n` | when a plan is created | requested coil group size |
 | `MR_AHA_CUDA_GENERIC_BD=1` | when a plan is created | use the generic kernels for every $L$ (testing and A/B timing) |
+| `MR_AHA_CUDA_TILED_BD=1` | when a plan is created | use the tiled kernels for every $L$ (testing and A/B timing) |
+| `MR_AHA_CUDA_BDT_NC`, `MR_AHA_CUDA_BDT_P`, `MR_AHA_CUDA_BDT_BLOCKS` | at every application | tiled kernels: coils per batch (1, 2, 4), locations per tile (8, 16, 32), thread blocks per SM (1, 2); for tuning |
 | `MR_AHA_CUDA_PROFILE=1` | at every application | print the GPU time of each stage |
 
 ## Re-entrancy

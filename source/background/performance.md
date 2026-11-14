@@ -1,7 +1,8 @@
 # How the CUDA $A^H A$ operator gets its speed
 
 This note explains the design choices that make the CUDA backend fast: what each one does and why
-it saves time. It covers one application of the operator on one GPU (§2), multi-GPU (§3.1 to
+it saves time. It covers one application of the operator on one GPU (§2, with the kernels for
+ranks above 30 in §2.5), multi-GPU (§3.1 to
 §3.3), the multi-GPU set-up of the Toeplitz kernel (§3.4) and the NUFFT method (§3.5).
 
 * For a short summary, read [Implementation notes](implementation.md).
@@ -21,7 +22,13 @@ The gains at a glance, for 12 coils and $L = 12$:
 | 3D kooshball 160³, $L = 12$ | 12.1 s | 4.3 s |
 | 2D radial 320², $L = 72$ | 3.7 s | 1.9 s |
 
-Both reference columns can be reproduced with the current library:
+| one $A^H A$, 2D radial 320², $L = 72$, 12 coils | generic kernels | default (tiled kernels, §2.5) |
+|---|---|---|
+| one H100 | 335 ms | 36 ms |
+| one L40S | 309 ms | 90 ms |
+| one TITAN RTX | 663 ms | 224 ms |
+
+The reference columns can be reproduced with the current library:
 `MR_AHA_CUDA_GENERIC_BD=1` selects the generic kernels, and `toep_dist='broadcast'` computes the
 kernel on one GPU.
 
@@ -79,8 +86,8 @@ $$
 
 The second term uses the Hermitian symmetry $A_{cr} = \overline{A_{rc}}$, so the mirrored half of
 the block never has to be loaded. The results agree with the generic kernels to single-precision
-rounding (`tests/check_bd_kernels.py`: ranks from 1 to 33, both triangles, masked and unmasked,
-coil groups of 1, 2 and 4).
+rounding (`tests/check_bd_kernels.py`: both triangles, masked and unmasked, coil groups of 1, 2
+and 4).
 
 ### 2.2 Kernels specialised on $L$: everything in registers
 
@@ -105,9 +112,8 @@ nothing spills to local memory. Keeping the kernel out of local memory is worth 
 block-diagonal stage (TITAN RTX, stack problem).
 
 **Range of $L$.** Up to $L = 30$ (`MR_BD_MAX_L`), one coil's two vectors ($4L$ registers) plus
-addressing fit in the register file. Measured on the TITAN RTX (384² 2D, 8 coils), the specialised
-kernel is 7 % faster than the generic one at $L = 28$ and equal at $L = 30$. Larger ranks use the
-generic shared-memory kernel, which is as fast there.
+addressing fit in the register file. Larger ranks use the tiled kernels of §2.5, which keep the
+vectors in shared memory instead.
 
 ### 2.3 Coil groups: `phi2_toep` is read once per group
 
@@ -158,6 +164,88 @@ coalesced.
 
 The effect: masked operators are 3–11 % faster than unmasked ones, and the masked 3D problem fits
 on the 24 GB TITAN RTX.
+
+### 2.5 Ranks above 30: tiled kernels
+
+Above $L = 30$ the rank vectors of one location no longer fit in registers, so the specialised
+kernels of §2.2 stop there. Ranks from 31 to 512 (`MR_BDT_MAX_L`) use the tiled kernels
+`mr_k_bdt<NC, OPT, MASKED>` (`src/cuda/mr_kernels_bdt.cu`). They follow the same three rules as
+the specialised kernels, with shared memory where those use registers.
+
+**Why large ranks need their own kernel.** Large ranks used to run the generic shared-memory
+kernels. Those lose time in three ways, which grow with $L$:
+
+- **Few threads per SM.** Every thread stages its own length-$L$ vector in shared memory
+  (576 bytes at $L = 72$). Only about 12 warps then fit on an SM of the H100, and about 5 on the
+  L40S, so too few loads are in flight to use the memory bandwidth.
+- **Two reads per stored element.** The generic kernels compute one output at a time from the
+  full $L \times L$ block, so every off-diagonal element of `phi2_toep` comes from DRAM twice.
+- **One coil per launch.** `phi2_toep` is read once per coil. The masked variant also needs a
+  compact buffer, a memset and a scatter pass.
+
+The block-diagonal stage matters more as $L$ grows: at $L = 72$ `phi2_toep` holds 2628 values per
+location, against 72 values of data.
+
+**One tile of locations per thread block.** A block of 256 threads owns a *tile* of 16
+consecutive grid locations and a batch of up to 4 coils of the coil group (§2.3):
+
+1. The block stages the inputs of its tile, `[coil, rank, location]`, in shared memory.
+2. It walks the stored triangle in *panels* of whole stored columns. Each panel is copied from
+   DRAM to shared memory once, for all 16 locations. Consecutive locations sit next to each
+   other in `phi2_toep`, so these loads are coalesced.
+3. Each thread owns one location and a few of its outputs, with one accumulator per output and
+   coil in registers. It adds every contribution the panel holds to them, reading the panel and
+   the inputs from shared memory. As in §2.1, one stored element $A_{rc}$ feeds two outputs
+   ($y_c$ directly, $y_r$ through its conjugate).
+4. After the last panel the block writes the outputs back in place.
+
+So each stored element comes from DRAM **once per coil batch**, the panel that was read serves
+every coil of the batch, and the accumulators never leave the registers.
+
+**Asynchronous copies.** On GPUs of compute capability 8.0 or newer the panel is copied with
+`cp.async`, which moves data from the L2 cache to shared memory without passing through
+registers. A thread can then have all the loads of a panel in flight at once. Ordinary loads
+were 25–35 % slower on the whole operator (H100: 45 ms against 34 ms; L40S: 101 ms against
+86 ms; `2d72`, masked). Older GPUs such as the TITAN RTX use ordinary loads.
+
+**The launch configuration depends on the GPU.** `mr_bdt_pick` chooses it at every launch from
+the shared memory and the registers of the device. The reasons were measured on `2d72` with the
+masked operator on the H100:
+
+| setting | choice | measured |
+|---|---|---|
+| coils per batch | as many of the group as the shared memory allows, 4 at most | 34 ms with 4 coils, 49 ms with 2 |
+| locations per tile | 16; 8 above $L = 256$, where a thread would own too many outputs | |
+| thread blocks per SM | two, if a panel of at least $2L$ elements still fits; else one | 34 ms with two, 43 ms with one |
+| panel | the rest of the shared memory, up to the whole triangle | |
+
+The rule for two blocks comes from the L40S, which has less shared memory per SM: two blocks
+would leave a panel of only 93 elements there and take 89 ms, against 86 ms with one block.
+`MR_AHA_CUDA_BDT_NC`, `MR_AHA_CUDA_BDT_P` and `MR_AHA_CUDA_BDT_BLOCKS` override the choice, for
+tuning.
+
+**What stays the same.** The tiled kernels have the contract of the specialised ones: they work
+in place on the padded grids, the masked variant goes through the index map of §2.4, they serve
+coil groups (§2.3), and they accept the location ranges of the remainder split (§3.2). The plan
+launches both families through the same two functions (`mr_bd_launch_dense`,
+`mr_bd_launch_masked`). The generic kernels remain as the fallback for a mask of more than 2³¹
+locations and behind `MR_AHA_CUDA_GENERIC_BD=1`; `MR_AHA_CUDA_TILED_BD=1` selects the tiled
+kernels for every rank, for tests and A/B timing.
+
+**The effect.** One $A^H A$ on `2d72` (320² image, $L = 72$, 12 coils), in ms. "Generic" is the
+same build with `MR_AHA_CUDA_GENERIC_BD=1`:
+
+| GPU | unmasked, generic | unmasked, tiled | gain | masked, generic | masked, tiled | gain |
+|---|---:|---:|---:|---:|---:|---:|
+| H100 | 335.3 | **36.2** | 9.3× | 165.5 | **32.9** | 5.0× |
+| L40S | 309.1 | **90.0** | 3.4× | 287.8 | **85.8** | 3.4× |
+| TITAN RTX | 663.0 | **223.7** | 3.0× | 574.6 | **198.0** | 2.9× |
+
+With the generic kernels the operator hardly gained from the L40S to the H100 at this rank; with
+the tiled kernels it gains 2.5×, in step with the other problems.
+
+On the H100 the block-diagonal stage of the masked operator takes 22.3 of 32.9 ms, and each of
+the two FFTs 4.1 ms.
 
 
 ## 3. Multi-GPU
@@ -405,16 +493,18 @@ difference ≤ 2.4·10⁻⁷):
 
 The time is dominated by the two cufinufft transforms. Set-up (plans and point sorting) takes a
 few milliseconds. For comparison, the Toeplitz method applies the 2D 320², $L = 72$ operator with
-12 coils in 0.67 s on the same GPU, after a 1.9 s set-up for the kernel.
+12 coils in 0.23 s on the same GPU, after a 2.6 s set-up for the kernel.
 
 
 ## 4. Verification
 
 The tests are described in [Testing](../development/testing.md). The checks behind this note:
 
-- **Specialised against generic kernels.** `tests/check_bd_kernels.py` applies the operator with
-  both kernel families for ranks from 1 to 33, both triangles, masked and unmasked, with coil
-  groups of 1, 2 and 4. They agree to single-precision rounding.
+- **Specialised and tiled against generic kernels.** `tests/check_bd_kernels.py` applies the
+  operator with the default kernels and with the generic ones for 14 ranks from 1 to 130, both
+  triangles, masked and unmasked, with coil groups of 1, 2 and 4. It also forces the tiled
+  kernels at every rank, with coil batches of 1, 2 and 4. All 504 combinations agree to
+  single-precision rounding (worst relative difference 2.8·10⁻⁷).
 - **Reference data.** `tests/check_reference.py` and `tests/check_reference_matlab.m` compare
   every public function with stored results.
 - **Multi-GPU against single-GPU.** `tests/check_op.py` and `tests/check_op_matlab.m` cover 2D, stack
