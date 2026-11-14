@@ -11,3 +11,38 @@ section#mr-aha > h1 {
   white-space: nowrap;
   border: 0;
 }
+
+/* Highlighter-pen mark: a slightly skewed yellow stroke behind the text. */
+mark.highlighter {
+  color: inherit;
+  padding: 0.05em 0.3em;
+  margin: 0 -0.1em;
+  border-radius: 0.8em 0.3em;
+  background: transparent;
+  background-image: linear-gradient(
+    to right,
+    rgba(255, 225, 0, 0.15),
+    rgba(255, 225, 0, 0.75) 4%,
+    rgba(255, 225, 0, 0.35)
+  );
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+body[data-theme="dark"] mark.highlighter {
+  background-image: linear-gradient(
+    to right,
+    rgba(255, 200, 0, 0.1),
+    rgba(255, 200, 0, 0.45) 4%,
+    rgba(255, 200, 0, 0.2)
+  );
+}
+@media (prefers-color-scheme: dark) {
+  body:not([data-theme="light"]) mark.highlighter {
+    background-image: linear-gradient(
+      to right,
+      rgba(255, 200, 0, 0.1),
+      rgba(255, 200, 0, 0.45) 4%,
+      rgba(255, 200, 0, 0.2)
+    );
+  }
+}
