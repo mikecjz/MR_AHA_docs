@@ -10,10 +10,34 @@
 :alt: "MR-A^H A: GPU forward normal operator for non-Cartesian MRI"
 ```
 
-MR_AHA evaluates the forward normal operator $A^H A$ on the GPU for **non-Cartesian MRI with
-low-rank (subspace) modelling**, via a Toeplitz embedding: after a one-off
-pre-computation, one application costs two FFTs per coil instead of two NUFFTs. A NUFFT-based
-operator with the same interface is included as the reference.
+MR_AHA is a highly optimized GPU library for evaluating the forward normal operator $A^H A$ for
+**non-Cartesian MRI with low-rank (subspace) modelling**. It uses a Toeplitz embedding; a
+NUFFT-based operator with the same interface is included as the reference.
+
+In the literature, most low-rank reconstructions, such as MR Multitasking, MR fingerprinting,
+T2 shuffling and GRASP-Pro, take an hour or more per data set. A few examples among many: a
+median of 71 minutes for cardiovascular MR Multitasking on a GPU workstation[^multitasking],
+over 4 hours for a whole-brain 3D MR fingerprinting subspace reconstruction in
+BART[^vista-mrf], about 60 minutes for T2 shuffling of the knee[^t2sh], and 6 to 9 hours per
+slice for GRASP-Pro DCE-MRI on a desktop CPU[^grasp-pro]. **MR_AHA aims to bring this down to
+seconds on modern GPU hardware.**
+
+[^multitasking]: A. G. Christodoulou et al., "Magnetic resonance multitasking for
+    motion-resolved quantitative cardiovascular imaging," *Nature Biomedical Engineering*
+    2(4):215–226, 2018. [doi:10.1038/s41551-018-0217-y](https://doi.org/10.1038/s41551-018-0217-y)
+
+[^vista-mrf]: C. Liao, X. Cao et al., "High-resolution myelin-water fraction and quantitative
+    relaxation mapping using 3D ViSTa-MR fingerprinting," *Magnetic Resonance in Medicine*
+    91(6):2278–2293, 2024. [doi:10.1002/mrm.29990](https://doi.org/10.1002/mrm.29990)
+
+[^t2sh]: S. Bao, J. I. Tamir et al., "Fast comprehensive single-sequence four-dimensional
+    pediatric knee MRI with T2 shuffling," *Journal of Magnetic Resonance Imaging*
+    45(6):1700–1711, 2017. [doi:10.1002/jmri.25508](https://doi.org/10.1002/jmri.25508)
+
+[^grasp-pro]: A. J. Mertens et al., "Accelerated dynamic magnetic resonance imaging from
+    Spatial-Subspace Reconstructions (SPARS)," *PLOS ONE* 20(1):e0317271, 2025, which reports
+    the GRASP-Pro reconstruction times (Tables 1 and 2).
+    [doi:10.1371/journal.pone.0317271](https://doi.org/10.1371/journal.pone.0317271)
 
 The numerics live in a standalone C++ library with a pure C surface. MATLAB, Python and plain
 C/C++ all call the same code. The library is built for one GPU backend: **CUDA** (NVIDIA GPUs,
