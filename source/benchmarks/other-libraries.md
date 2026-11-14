@@ -15,10 +15,10 @@ cost to set up.
 
 ## Summary
 
-* **BART is 2.1–5.6× slower per $A^H A$ and needs 2–10× the GPU memory.** On a 24 GB GPU it
+* **BART is 2.1–5.6× slower per $A^H A$ and needs 2–6× the GPU memory.** On a 24 GB GPU it
   fits only the smallest of the four standard problems, and fits reduced stack and 3D problems
-  only in its low-memory mode. A 20-iteration CG reconstruction with `bart pics` is 1.9–5.5×
-  slower than the same iterations with MR_AHA, and 3–9× slower end to end, because every call
+  only in its low-memory mode. A 20-iteration CG reconstruction with `bart pics` is 2.7–5.5×
+  slower than the same iterations with MR_AHA, and 3–8× slower end to end, because every call
   through BART's Python or MATLAB interface starts a new process, exchanges files and recomputes
   the kernel.
 * **MRISubspaceRecon.jl is close to MR_AHA on 2D and 3D problems.** Its $A^H A$ is 1.05–1.9×
@@ -30,9 +30,8 @@ cost to set up.
   MR_AHA's stack operator is 2.6–2.8× faster than MRISubspaceRecon.jl's and 5.5× faster than
   BART's. MRISubspaceRecon.jl also cannot run the standard stack problem at all (see
   [Limits of MRISubspaceRecon.jl](#limits-of-mrisubspacereconjl)).
-* **All three compute the same operator.** BART's full-kernel operator agrees with MR_AHA to
-  about $10^{-5}$. MRISubspaceRecon.jl agrees to $2$–$5 \cdot 10^{-3}$, the error of its kernel
-  mask, which cannot be switched off.
+* **MRISubspaceRecon.jl computes the same operator up to its kernel mask.** It agrees with
+  MR_AHA to $2$–$5 \cdot 10^{-3}$, the error of the mask, which cannot be switched off.
 
 ## What was compared
 
@@ -83,23 +82,32 @@ kernel, so it adds to their set-up time but not to $A^H A$.
 All BART numbers are from the TITAN RTX. Times are the best median of 2–3 runs; set-up includes
 the kernel (BART calls it the point-spread function, PSF).
 
+BART's Toeplitz embedding splits the 2× oversampled grid into $2^d$ shifted grids of the image
+size: 4 in 2D, 8 in 3D. By default all of them are in GPU memory at once. **Low-memory mode**
+(`-U` in `bart pics`) processes them one after another instead, which needs less memory at
+little cost in time here. The **upper-triangular PSF** stores only the upper triangle of each
+Hermitian $L \times L$ kernel block.
+
+```{note}
+In BART v1.0.01 the upper-triangular PSF multiplies by the complex conjugate of the Gram blocks.
+```
+
 ### One $A^H A$
 
-| Problem | MR_AHA Toeplitz | BART, full PSF | BART, upper-triangular PSF | BART, upper-triangular, low memory |
-|---|---:|---:|---:|---:|
-| `2d` | **2.20 ms** (0.05 GB) | 4.70 ms (0.32 GB) | 5.14 ms (0.32 GB) | 5.22 ms (0.17 GB) |
-| `2d72`, $L = 24$ | **44 ms** (1.3 GB) | 148 ms (12.3 GB) | 156 ms (7.1 GB) | 155 ms (3.9 GB) |
-| stack 160² × 28 | **133 ms** (2.8 GB) | out of memory | out of memory | 751 ms (10.9 GB) |
-| 3D 96³ | **387 ms** (6.8 GB) | out of memory | out of memory | 829 ms (13.1 GB) |
-| full `2d72`, `stack`, `3d` | 673 ms / 1012 ms / out of memory | out of memory | out of memory | out of memory |
+| Problem | MR_AHA Toeplitz | BART, upper-triangular PSF | BART, upper-triangular, low memory |
+|---|---:|---:|---:|
+| `2d` | **2.20 ms** (0.05 GB) | 5.14 ms (0.32 GB) | 5.22 ms (0.17 GB) |
+| `2d72`, $L = 24$ | **44 ms** (1.3 GB) | 156 ms (7.1 GB) | 155 ms (3.9 GB) |
+| stack 160² × 28 | **133 ms** (2.8 GB) | out of memory | 751 ms (10.9 GB) |
+| 3D 96³ | **387 ms** (6.8 GB) | out of memory | 829 ms (13.1 GB) |
+| full `2d72`, `stack`, `3d` | 673 ms / 1012 ms / out of memory | out of memory | out of memory |
 
-* BART's upper-triangular PSF saves memory, not time.
 * The machine was shared with other users. On the larger problems, run-to-run times varied by
   up to 2.5× for both libraries; the table gives the best runs.
 
 ### 20 CG iterations
 
-`bart pics -g` was run through BART's own Python interface (`bart.py`) with 1 and 21
+`bart pics -g -U` (low-memory mode) was run through BART's own Python interface (`bart.py`) with 1 and 21
 iterations; the difference is the time of 20 iterations. BART's CG has no stopping tolerance by
 default, so every run does all its iterations. MR_AHA ran 20 plain CG iterations on
 $A^H A\,u = b$ with the same operator as above. "End to end" is, for MR_AHA, copying the inputs to
@@ -108,28 +116,14 @@ start, file I/O, PSF, scaling, adjoint and the 20 iterations.
 
 | Problem | MR_AHA Toeplitz CG | BART CG | Ratio | MR_AHA end to end | BART end to end | Ratio |
 |---|---:|---:|---:|---:|---:|---:|
-| `2d` | **0.055 s** | 0.105 s (full PSF) | 1.9× | **0.10 s** | 0.91 s | 9× |
-| `2d72`, $L = 24$ | **0.88 s** | 3.03 s (full PSF) | 3.4× | **1.26 s** | 6.64 s | 5.3× |
-| stack 160² × 28 | **2.47 s** | 13.7 s (low memory) | 5.5× | **3.44 s** | 27.3 s | 7.9× |
-| 3D 96³ | **6.32 s** | 16.9 s (low memory) | 2.7× | **10.5 s** | 32.8 s | 3.1× |
+| stack 160² × 28 | **2.47 s** | 13.7 s | 5.5× | **3.44 s** | 27.3 s | 7.9× |
+| 3D 96³ | **6.32 s** | 16.9 s | 2.7× | **10.5 s** | 32.8 s | 3.1× |
 
 * The CG ratio follows the $A^H A$ ratio, since both libraries spend almost all their CG time
   in $A^H A$.
 * The end-to-end ratio is larger. BART's MATLAB and Python interfaces run the `bart` executable
   and exchange `.cfl` files, so an operator cannot stay in GPU memory between calls, and every
   call recomputes the PSF.
-* The `2d` BART CG time is the difference of two calls of about 1 s each and varies by about
-  ±30 % between runs.
-
-### Accuracy
-
-After the best complex scalar (BART normalises its FFT differently), BART's full-PSF operator
-agrees with MR_AHA's Toeplitz operator to $7 \cdot 10^{-6}$–$1.6 \cdot 10^{-5}$.
-
-```{note}
-In BART v1.0.01 the upper-triangular PSF multiplies by the complex conjugate of the Gram blocks
-that the full PSF applies.
-```
 
 ## MRISubspaceRecon.jl
 
