@@ -111,10 +111,11 @@ html_theme_options = {
     "light_logo": "wordmark-light.svg",
     "dark_logo": "wordmark-dark.svg",
     "sidebar_hide_name": True,
-    "source_repository": "https://github.com/mikecjz/MR_AHA_docs/",
-    "source_branch": "main",
-    "source_directory": "source/",
+    # One top-of-page button, overridden in _templates/components/
+    # view-this-page.html to be a GitHub icon linking to the MR_AHA repository.
+    "top_of_page_buttons": ["view"],
 }
+templates_path = ["_templates"]
 html_baseurl = "https://mikecjz.github.io/MR_AHA_docs/"
 copybutton_prompt_text = r">>> |\$ "
 copybutton_prompt_is_regexp = True
