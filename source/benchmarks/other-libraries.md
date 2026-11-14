@@ -169,8 +169,7 @@ $A^H A$ in ms, set-up in s in brackets.
   Toeplitz operator gains almost nothing from the L40S to the H100 on this problem
   ($L = 72$), while every other problem runs 3–4× faster on the H100, and on the H100 it is slower
   than MR_AHA's own NUFFT operator. $L = 72$ is above the largest rank (30) for which MR_AHA has
-  a block-diagonal kernel specialised on $L$, so this problem runs MR_AHA's generic block kernel;
-  why that kernel scales so poorly to the H100 has not been analysed yet.
+  a block-diagonal kernel specialised on $L$, so this problem runs MR_AHA's generic block kernel.
 * MRISubspaceRecon.jl's set-up is 1.3–15× slower, except on the small `2d` problem on the L40S
   and the H100, where MR_AHA's set-up takes 0.21 s against 0.02 s.
 * Its kernel memory is close to MR_AHA's masked kernel (`3d`: 18.5 GB, against 15.1 GB masked
