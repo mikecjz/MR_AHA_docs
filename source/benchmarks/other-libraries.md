@@ -38,7 +38,7 @@ cost to set up.
 
 | Library | Version | Operator |
 |---|---|---|
-| MR_AHA | [`711003d`](https://github.com/mikecjz/MR_AHA/tree/711003d) | `mr_aha.create_op`, method `"toeplitz"` (unmasked and masked) and `"nufft"` |
+| MR_AHA | [`711003d`](https://github.com/mikecjz/MR_AHA/tree/711003d) | `mr_aha.create_op`, method `"toeplitz"` (unmasked and masked) |
 | BART | v1.0.01 ([`381039c`](https://codeberg.org/mrirecon/bart/src/commit/381039c4)), built with CUDA | the normal operator of `bart pics` (`sense_nc_init()`), timed with a small C program linked against BART's libraries, and `bart pics` itself through `bart.py` |
 | MRISubspaceRecon.jl | v0.10.1 ([`1e14dff`](https://github.com/MagneticResonanceImaging/MRISubspaceRecon.jl/tree/1e14dff48634ce8bb8222177e7bfd335a8ccf03d)), Julia 1.11.7, CUDA.jl 6.5.1 | `NFFTNormalOp` on `CuArray`s |
 
@@ -85,13 +85,13 @@ the kernel (BART calls it the point-spread function, PSF).
 
 ### One $A^H A$
 
-| Problem | MR_AHA Toeplitz | BART, full PSF | BART, upper-triangular PSF | BART, upper-triangular, low memory | MR_AHA NUFFT |
-|---|---:|---:|---:|---:|---:|
-| `2d` | **2.20 ms** (0.05 GB) | 4.70 ms (0.32 GB) | 5.14 ms (0.32 GB) | 5.22 ms (0.17 GB) | 21 ms |
-| `2d72`, $L = 24$ | **44 ms** (1.3 GB) | 148 ms (12.3 GB) | 156 ms (7.1 GB) | 155 ms (3.9 GB) | 296 ms |
-| stack 160² × 28 | **133 ms** (2.8 GB) | out of memory | out of memory | 751 ms (10.9 GB) | 541 ms |
-| 3D 96³ | **387 ms** (6.8 GB) | out of memory | out of memory | 829 ms (13.1 GB) | 3619 ms |
-| full `2d72`, `stack`, `3d` | 673 ms / 1012 ms / out of memory | out of memory | out of memory | out of memory | 722 / 2880 / 11713 ms |
+| Problem | MR_AHA Toeplitz | BART, full PSF | BART, upper-triangular PSF | BART, upper-triangular, low memory |
+|---|---:|---:|---:|---:|
+| `2d` | **2.20 ms** (0.05 GB) | 4.70 ms (0.32 GB) | 5.14 ms (0.32 GB) | 5.22 ms (0.17 GB) |
+| `2d72`, $L = 24$ | **44 ms** (1.3 GB) | 148 ms (12.3 GB) | 156 ms (7.1 GB) | 155 ms (3.9 GB) |
+| stack 160² × 28 | **133 ms** (2.8 GB) | out of memory | out of memory | 751 ms (10.9 GB) |
+| 3D 96³ | **387 ms** (6.8 GB) | out of memory | out of memory | 829 ms (13.1 GB) |
+| full `2d72`, `stack`, `3d` | 673 ms / 1012 ms / out of memory | out of memory | out of memory | out of memory |
 
 * BART's upper-triangular PSF saves memory, not time.
 * The machine was shared with other users. On the larger problems, run-to-run times varied by
@@ -127,8 +127,8 @@ After the best complex scalar (BART normalises its FFT differently), BART's full
 agrees with MR_AHA's Toeplitz operator to $7 \cdot 10^{-6}$–$1.6 \cdot 10^{-5}$.
 
 ```{warning}
-In BART v1.0.01 the upper-triangular PSF (`--nufft-conf upper-triag-psf`) applies the complex
-conjugate of the Gram blocks that the full PSF and BART's own NUFFT apply. With a complex basis
+In BART v1.0.01 the upper-triangular PSF applies the complex conjugate of the Gram blocks that
+the full PSF applies. With a complex basis
 its result is wrong (relative error 0.3–0.8 here). With a real basis, the usual case in BART, it
 is correct (about $6 \cdot 10^{-6}$). The run time is not affected.
 ```
@@ -143,32 +143,31 @@ of the warm creations (the first creation in Julia also compiles, about 1.7 s fo
 
 $A^H A$ in ms, set-up in s in brackets.
 
-| Problem | GPU | MRISubspaceRecon.jl | MR_AHA masked | MR_AHA Toeplitz | MR_AHA NUFFT |
-|---|---|---:|---:|---:|---:|
-| `2d` | TITAN RTX | 3.05 (0.03) | **2.16** (0.01) | 2.22 | 20.2 |
-| | L40S | 0.82 (0.02) | **0.43** (0.21) | 0.43 | 13.1 |
-| | H100 | 0.89 (0.02) | **0.54** (0.21) | 0.53 | 6.7 |
-| `2d72` | TITAN RTX | 802 (5.68) | **583** (2.16) | 674 | 723 |
-| | L40S | 362 (4.07) | **288** (2.31) | 309 | 436 |
-| | H100 | **76** (4.65) | 165 (2.11) | 335 | 199 |
-| `stack` | all three | fails | | | |
-| | TITAN RTX | | **980** (3.25) | 1011 | 2651 |
-| | L40S | | **744** (2.59) | 752 | 1597 |
-| | H100 | | **170** (1.84) | 178 | 806 |
-| `stack` with 32 slices | TITAN RTX | 1489 (31.7) | **560** (2.06) | 577 | 1662 |
-| | L40S | 1140 (19.3) | **412** (1.64) | 417 | 913 |
-| | H100 | 272 (5.26) | **96** (1.05) | 100 | 454 |
-| `3d` | TITAN RTX | 1685 (36.1) | **1378** (19.4) | 1603 | 8571 |
-| | L40S | 1348 (21.4) | **1016** (7.34) | 1063 | 5700 |
-| | H100 | 317 (6.15) | **231** (4.75) | 252 | 2033 |
+| Problem | GPU | MRISubspaceRecon.jl | MR_AHA masked | MR_AHA Toeplitz |
+|---|---|---:|---:|---:|
+| `2d` | TITAN RTX | 3.05 (0.03) | **2.16** (0.01) | 2.22 |
+| | L40S | 0.82 (0.02) | **0.43** (0.21) | 0.43 |
+| | H100 | 0.89 (0.02) | **0.54** (0.21) | 0.53 |
+| `2d72` | TITAN RTX | 802 (5.68) | **583** (2.16) | 674 |
+| | L40S | 362 (4.07) | **288** (2.31) | 309 |
+| | H100 | **76** (4.65) | 165 (2.11) | 335 |
+| `stack` | all three | fails | | |
+| | TITAN RTX | | **980** (3.25) | 1011 |
+| | L40S | | **744** (2.59) | 752 |
+| | H100 | | **170** (1.84) | 178 |
+| `stack` with 32 slices | TITAN RTX | 1489 (31.7) | **560** (2.06) | 577 |
+| | L40S | 1140 (19.3) | **412** (1.64) | 417 |
+| | H100 | 272 (5.26) | **96** (1.05) | 100 |
+| `3d` | TITAN RTX | 1685 (36.1) | **1378** (19.4) | 1603 |
+| | L40S | 1348 (21.4) | **1016** (7.34) | 1063 |
+| | H100 | 317 (6.15) | **231** (4.75) | 252 |
 
 * On 2D and 3D problems MRISubspaceRecon.jl is 1.2–1.9× slower than MR_AHA's masked operator
   (1.05–1.4× slower than the unmasked one on the TITAN RTX).
 * On the stack it is 2.6–2.8× slower: it has no stack-of-stars operator (see below).
 * `2d72` on the H100 is the exception, where MRISubspaceRecon.jl is 2.2× faster. MR_AHA's
   Toeplitz operator gains almost nothing from the L40S to the H100 on this problem
-  ($L = 72$), while every other problem runs 3–4× faster on the H100, and on the H100 it is slower
-  than MR_AHA's own NUFFT operator. $L = 72$ is above the largest rank (30) for which MR_AHA has
+  ($L = 72$), while every other problem runs 3–4× faster on the H100. $L = 72$ is above the largest rank (30) for which MR_AHA has
   a block-diagonal kernel specialised on $L$, so this problem runs MR_AHA's generic block kernel.
 * MRISubspaceRecon.jl's set-up is 1.3–15× slower, except on the small `2d` problem on the L40S
   and the H100, where MR_AHA's set-up takes 0.21 s against 0.02 s.
@@ -177,7 +176,7 @@ $A^H A$ in ms, set-up in s in brackets.
 
 ### Accuracy
 
-The relative difference to MR_AHA's NUFFT operator, which is exact to the NUFFT tolerance, is the
+The relative difference to an exact reference $A^H A$, applied without a Toeplitz kernel, is the
 same on all three GPUs:
 
 | Problem | MR_AHA Toeplitz | MR_AHA masked | MRISubspaceRecon.jl |
@@ -207,7 +206,7 @@ The following describes MRISubspaceRecon.jl at commit
   stack operator is 2.6–2.8× faster.
 * **Grid sizes must have only the prime factors 2, 3 and 5.** Every dimension of the 2×
   oversampled grid must be of the form $2^a 3^b 5^c$ (`nextprod((2, 3, 5), n)` in
-  `calculate_kmask_indcs`), a requirement of the NUFFT package it uses, NonuniformFFTs.jl.
+  `calculate_kmask_indcs`), a requirement of NonuniformFFTs.jl, which it uses.
   The standard `stack` preset has 56 slices, so its oversampled grid has 112 = 2⁴ · 7 slices and
   the operator cannot be created. With 32 slices it runs. Image sizes such as 56, 112 or 224
   cannot be used without padding the images first.
@@ -215,8 +214,7 @@ The following describes MRISubspaceRecon.jl at commit
   reaches through a Gaussian spreading kernel. There is no option to switch this off, so the
   operator is an approximation ($2$–$5 \cdot 10^{-3}$ on these problems).
 * **One GPU.** The CUDA code never selects a device; there is no multi-GPU mode.
-* **Slower set-up.** The kernel is computed one triangular entry at a time, with one type-1
-  NUFFT and one FFT each.
+* **Slower set-up.** The kernel is computed one triangular entry at a time.
 
 ## Reproduce
 
