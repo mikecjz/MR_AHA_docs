@@ -24,7 +24,7 @@ T2 shuffling and GRASP-Pro, take an hour or more per data set. A few examples am
 - **T2 shuffling:** about 60 minutes for the knee[^t2sh].
 - **GRASP-Pro:** 6 to 9 hours per slice for DCE-MRI on a desktop CPU[^grasp-pro].
 
-<mark class="highlighter"><strong>MR_AHA aims to bring down hours of subspace reconstruction to seconds on modern GPU hardware.</strong></mark>
+<mark class="highlighter"><strong>MR_AHA aims to bring down hours of subspace reconstruction to as fast as seconds on modern GPU hardware.</strong></mark>
 
 [^multitasking]: A. G. Christodoulou et al., "Magnetic resonance multitasking for
     motion-resolved quantitative cardiovascular imaging," *Nature Biomedical Engineering*
