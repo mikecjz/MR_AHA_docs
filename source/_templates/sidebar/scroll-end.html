@@ -1,0 +1,19 @@
+{#- Closes Furo's sidebar scroll container. The inline script runs while the
+    page is still being parsed, before the first paint, so the sidebar opens at
+    the position saved by _static/sidebar-scroll.js instead of jumping from the
+    top. Pairs with _static/sidebar-scroll.js (saving and first-visit scroll). -#}
+<script>
+  (function () {
+    var el = document.currentScript.parentNode, saved = null;
+    try { saved = sessionStorage.getItem("mr-aha-sidebar-scroll"); } catch (e) {}
+    if (saved !== null) {
+      // Furo sets scroll-behavior: smooth on the sidebar, which would animate
+      // the jump from the top; restore instantly instead.
+      el.style.scrollBehavior = "auto";
+      el.scrollTop = parseInt(saved, 10) || 0;
+      el.style.scrollBehavior = "";
+      el.setAttribute("data-scroll-restored", "");
+    }
+  })();
+</script>
+</div>
