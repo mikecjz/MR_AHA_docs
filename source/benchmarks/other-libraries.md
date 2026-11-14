@@ -126,11 +126,9 @@ start, file I/O, PSF, scaling, adjoint and the 20 iterations.
 After the best complex scalar (BART normalises its FFT differently), BART's full-PSF operator
 agrees with MR_AHA's Toeplitz operator to $7 \cdot 10^{-6}$–$1.6 \cdot 10^{-5}$.
 
-```{warning}
-In BART v1.0.01 the upper-triangular PSF applies the complex conjugate of the Gram blocks that
-the full PSF applies. With a complex basis
-its result is wrong (relative error 0.3–0.8 here). With a real basis, the usual case in BART, it
-is correct (about $6 \cdot 10^{-6}$). The run time is not affected.
+```{note}
+In BART v1.0.01 the upper-triangular PSF multiplies by the complex conjugate of the Gram blocks
+that the full PSF applies.
 ```
 
 ## MRISubspaceRecon.jl
@@ -143,24 +141,48 @@ of the warm creations (the first creation in Julia also compiles, about 1.7 s fo
 
 $A^H A$ in ms, set-up in s in brackets.
 
-| Problem | GPU | MRISubspaceRecon.jl | MR_AHA masked | MR_AHA Toeplitz |
-|---|---|---:|---:|---:|
-| `2d` | TITAN RTX | 3.05 (0.03) | **2.16** (0.01) | 2.22 |
-| | L40S | 0.82 (0.02) | **0.43** (0.21) | 0.43 |
-| | H100 | 0.89 (0.02) | **0.54** (0.21) | 0.53 |
-| `2d72` | TITAN RTX | 802 (5.68) | **583** (2.16) | 674 |
-| | L40S | 362 (4.07) | **288** (2.31) | 309 |
-| | H100 | **76** (4.65) | 165 (2.11) | 335 |
-| `stack` | all three | fails | | |
-| | TITAN RTX | | **980** (3.25) | 1011 |
-| | L40S | | **744** (2.59) | 752 |
-| | H100 | | **170** (1.84) | 178 |
-| `stack` with 32 slices | TITAN RTX | 1489 (31.7) | **560** (2.06) | 577 |
-| | L40S | 1140 (19.3) | **412** (1.64) | 417 |
-| | H100 | 272 (5.26) | **96** (1.05) | 100 |
-| `3d` | TITAN RTX | 1685 (36.1) | **1378** (19.4) | 1603 |
-| | L40S | 1348 (21.4) | **1016** (7.34) | 1063 |
-| | H100 | 317 (6.15) | **231** (4.75) | 252 |
+::::{tab-set}
+
+:::{tab-item} TITAN RTX
+:sync: titanrtx
+
+| Problem | MRISubspaceRecon.jl | MR_AHA masked | MR_AHA Toeplitz |
+|---|---:|---:|---:|
+| `2d` | 3.05 (0.03) | **2.16** (0.01) | 2.22 |
+| `2d72` | 802 (5.68) | **583** (2.16) | 674 |
+| `stack` | fails | **980** (3.25) | 1011 |
+| `stack` with 32 slices | 1489 (31.7) | **560** (2.06) | 577 |
+| `3d` | 1685 (36.1) | **1378** (19.4) | 1603 |
+
+:::
+
+:::{tab-item} L40S
+:sync: l40s
+
+| Problem | MRISubspaceRecon.jl | MR_AHA masked | MR_AHA Toeplitz |
+|---|---:|---:|---:|
+| `2d` | 0.82 (0.02) | **0.43** (0.21) | 0.43 |
+| `2d72` | 362 (4.07) | **288** (2.31) | 309 |
+| `stack` | fails | **744** (2.59) | 752 |
+| `stack` with 32 slices | 1140 (19.3) | **412** (1.64) | 417 |
+| `3d` | 1348 (21.4) | **1016** (7.34) | 1063 |
+
+:::
+
+:::{tab-item} H100
+:sync: h100
+
+| Problem | MRISubspaceRecon.jl | MR_AHA masked | MR_AHA Toeplitz |
+|---|---:|---:|---:|
+| `2d` | 0.89 (0.02) | **0.54** (0.21) | 0.53 |
+| `2d72` | **76** (4.65) | 165 (2.11) | 335 |
+| `stack` | fails | **170** (1.84) | 178 |
+| `stack` with 32 slices | 272 (5.26) | **96** (1.05) | 100 |
+| `3d` | 317 (6.15) | **231** (4.75) | 252 |
+
+:::
+
+::::
 
 * On 2D and 3D problems MRISubspaceRecon.jl is 1.2–1.9× slower than MR_AHA's masked operator
   (1.05–1.4× slower than the unmasked one on the TITAN RTX).
