@@ -66,7 +66,7 @@ read decides the time of the stage.
 The optimized kernels follow three rules, explained in [§2](#2-one-gpu):
 
 1. each stored element of `phi2_toep` is read **once** per pass over the triangle ([§2.1](#21-each-stored-element-is-read-once));
-2. the rank vectors live in **registers**, because $L$ is a compile-time constant ([§2.2](#22-kernels-specialised-on-l-everything-in-registers));
+2. the rank vectors live in **registers**, because $L$ is a compile-time constant ([§2.2](#22-kernels-specialised-on--everything-in-registers));
 3. `phi2_toep` is read from DRAM about **once per group of coils** ([§2.4](#24-coil-groups-phi2_toep-is-read-once-per-group)).
 
 With them the block-diagonal stage takes 20–25 % of the GPU time and runs close to the DRAM
@@ -119,7 +119,7 @@ vectors in shared memory instead.
 ### 2.3 Ranks above 30: tiled kernels
 
 Above $L = 30$ the rank vectors of one location no longer fit in registers, so the specialised
-kernels of [§2.2](#22-kernels-specialised-on-l-everything-in-registers) stop there. Ranks from 31 to 512 (`MR_BDT_MAX_L`) use the tiled kernels
+kernels of [§2.2](#22-kernels-specialised-on--everything-in-registers) stop there. Ranks from 31 to 512 (`MR_BDT_MAX_L`) use the tiled kernels
 `mr_k_bdt<NC, OPT, MASKED>` (`src/cuda/mr_kernels_bdt.cu`). They follow the same three rules as
 the specialised kernels, with shared memory where those use registers.
 
