@@ -119,21 +119,6 @@ trajectory (`Phi_rt(:,idx) * Phi_rt(:,idx)'`, see
 The packaged Toeplitz operator calls `calc_toep` internally. A multi-GPU operator spreads the $(L^2+L)/2$ independent triangular components over the
 GPUs; see [Multi-GPU](multi-gpu.md).
 
-> **Experimental: NUFFT settings of `calc_toep`.** Two environment variables, read when the
-> kernel is computed (by `calc_toep` or `create_op`), change its type-1 transform:
->
-> * `MR_AHA_TOEP_UPSAMPFAC` sets the NUFFT's internal upsampling factor σ on both backends
->   (cufinufft on CUDA, mlx-nufft on Apple silicon). The default is **2.0**; the other supported
->   value is 1.25. σ only sizes the NUFFT's fine grid; the Toeplitz grid `phi2_dim` is unchanged.
-> * `MR_AHA_TOEP_GPU_METHOD` (CUDA only) sets cufinufft's spreading method: 0 = cufinufft's
->   choice (default), 1 = GM-sort, 2 = shared memory.
->
-> The defaults are the recommended settings. Two settings are faster on CUDA: σ = 1.25 with
-> `eps = 1e-4` computes the 3D kooshball kernel 1.7× faster than σ = 2 with `eps = 1e-5`, at a
-> similar error, and GM-sort is 1.3–1.6× faster for 2D and stack at the same accuracy. These
-> switches are for benchmarking and may change; see
-> [NUFFT upsampling factor](../benchmarks/upsampfac.md) for the measurements.
-
 ### `AhA_Toeplitz` — the hot loop
 
 ::::{tab-set}

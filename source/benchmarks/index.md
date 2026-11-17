@@ -49,7 +49,6 @@ The pages of this section record the measurements made while the library was dev
 | [Main study](results.md) | Toeplitz against NUFFT, one $A^H A$ and 20 CG iterations, on a TITAN RTX, an L40S and an Apple M3 Ultra |
 | [Neighbourhood mask](neighbour-mask.md) | how much of the grid the mask keeps and how accurate the masked operator is, for radii 1 to 8 |
 | [CUDA optimisation and multi-GPU](cuda-multigpu.md) | the default CUDA kernels against the generic ones, and multi-GPU scaling on H100s |
-| [NUFFT upsampling factor](upsampfac.md) | experimental NUFFT settings that compute the Toeplitz kernel faster |
 | [VkFFT on Metal](vkfft.md) | whether VkFFT's Metal backend is accurate and fast enough |
 | [Julia and BART](other-libraries.md) | MR_AHA against BART and MRISubspaceRecon.jl: one $A^H A$, 20 CG iterations, memory and accuracy, on a TITAN RTX, an L40S and an H100 |
 
