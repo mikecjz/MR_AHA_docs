@@ -43,9 +43,8 @@ T2 shuffling and GRASP-Pro, take an hour or more per data set. A few examples am
     the GRASP-Pro reconstruction times (Tables 1 and 2).
     [doi:10.1371/journal.pone.0317271](https://doi.org/10.1371/journal.pone.0317271)
 
-The numerics live in a standalone C++ library with a pure C surface. MATLAB, Python and plain
-C/C++ all call the same code. The library is built for one GPU backend: **CUDA** (NVIDIA GPUs,
-one or several) or **Metal** (Apple silicon).
+The operator is implemented in C++/CUDA/Metal, and MATLAB, Python and C/C++ simply call the
+library. The library is compatible with NVIDIA GPUs (multi-GPU supported) and Apple silicon.
 
 Everything runs on the GPU. With CUDA all array arguments are device pointers (`gpuArray` in
 MATLAB, `cupy.ndarray` in Python) and the library never copies bulk data through the host. With
