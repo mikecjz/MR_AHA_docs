@@ -31,7 +31,7 @@ cost to set up.
   [Limits of MRISubspaceRecon.jl](#limits-of-mrisubspacereconjl)).
 * **High rank used to be the exception and no longer is.** At $L = 72$ MR_AHA is 2.3–4.2× faster
   than MRISubspaceRecon.jl and 7.7–7.8× faster than BART, with its
-  [tiled kernels for ranks above 30](../background/performance.md#25-ranks-above-30-tiled-kernels).
+  [tiled kernels for ranks above 30](../background/performance.md#23-ranks-above-30-tiled-kernels).
   Before them, MRISubspaceRecon.jl was 2.2× and BART 1.2× faster than MR_AHA on the H100.
 * **MRISubspaceRecon.jl computes the same operator up to its kernel mask.** It agrees with
   MR_AHA to $2$–$5 \cdot 10^{-3}$, the error of the mask, which cannot be switched off.
@@ -308,7 +308,7 @@ fit the 24 GB GPU next to the other arrays of this comparison; its masked one do
 * `2d72` shows the largest gap on 2D and 3D problems: MR_AHA is 4.0×, 4.2× and 2.3× faster on
   the TITAN RTX, the L40S and the H100. $L = 72$ is above the largest rank (30) for which
   MR_AHA keeps the rank vectors in registers; such ranks run its
-  [tiled kernels](../background/performance.md#25-ranks-above-30-tiled-kernels). Before those
+  [tiled kernels](../background/performance.md#23-ranks-above-30-tiled-kernels). Before those
   kernels MR_AHA's masked operator took 583, 288 and 165 ms, and MRISubspaceRecon.jl was 2.2×
   faster on the H100.
 * MRISubspaceRecon.jl's set-up is 1.3–17× slower, except on the small `2d` problem on the L40S

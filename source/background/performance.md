@@ -1,9 +1,9 @@
 # How the CUDA $A^H A$ operator gets its speed
 
 This note explains the design choices that make the CUDA backend fast: what each one does and why
-it saves time. It covers one application of the operator on one GPU (§2, with the kernels for
-ranks above 30 in §2.5), multi-GPU (§3.1 to
-§3.3), the multi-GPU set-up of the Toeplitz kernel (§3.4) and the NUFFT method (§3.5).
+it saves time. It covers one application of the operator on one GPU ([§2](#2-one-gpu), with the kernels for
+ranks above 30 in [§2.3](#23-ranks-above-30-tiled-kernels)), multi-GPU ([§3.1](#31-decomposition-by-coil) to
+[§3.3](#33-robustness)), the multi-GPU set-up of the Toeplitz kernel ([§3.4](#34-set-up-computing-phi2_toep-on-all-gpus)) and the NUFFT method ([§3.5](#35-the-nufft-method-of-the-operator)).
 
 * For a short summary, read [Implementation notes](implementation.md).
 * For how to use multi-GPU, read [Multi-GPU](../guide/multi-gpu.md).
@@ -13,7 +13,7 @@ ranks above 30 in §2.5), multi-GPU (§3.1 to
 
 The gains at a glance, for 12 coils and $L = 12$:
 
-| one $A^H A$ | generic kernels, one coil at a time, one H100 | default, one H100 | default, three H100s (NVLink) |
+| one $A^H A$ | generic kernels, one coil at a time, one H100 | optimized kernels, one H100 | optimized kernels, three H100s (NVLink) |
 |---|---|---|---|
 | stack-of-stars 320² × 56 | 254.5 ms | 178.9 ms | 65.3 ms |
 | 3D kooshball 160³ | 362.6 ms | 254.6 ms | 88.2 ms |
@@ -23,7 +23,7 @@ The gains at a glance, for 12 coils and $L = 12$:
 | 3D kooshball 160³, $L = 12$ | 12.1 s | 4.3 s |
 | 2D radial 320², $L = 72$ | 3.7 s | 1.9 s |
 
-| one $A^H A$, 2D radial 320², $L = 72$, 12 coils | generic kernels | default (tiled kernels, §2.5) |
+| one $A^H A$, 2D radial 320², $L = 72$, 12 coils | generic kernels | optimized kernels (tiled, [§2.3](#23-ranks-above-30-tiled-kernels)) |
 |---|---|---|
 | one H100 | 335 ms | 36 ms |
 | one L40S | 309 ms | 90 ms |
@@ -63,11 +63,11 @@ are dominated by `phi2_toep`: at $L = 12$ it holds 78 complex values per locatio
 values of data read and 12 written. For the stack problem `phi2_toep` is 14.3 GB. How often it is
 read decides the time of the stage.
 
-The default kernels follow three rules, explained in §2:
+The optimized kernels follow three rules, explained in [§2](#2-one-gpu):
 
-1. each stored element of `phi2_toep` is read **once** per pass over the triangle (§2.1);
-2. the rank vectors live in **registers**, because $L$ is a compile-time constant (§2.2);
-3. `phi2_toep` is read from DRAM about **once per group of coils** (§2.3).
+1. each stored element of `phi2_toep` is read **once** per pass over the triangle ([§2.1](#21-each-stored-element-is-read-once));
+2. the rank vectors live in **registers**, because $L$ is a compile-time constant ([§2.2](#22-kernels-specialised-on-l-everything-in-registers));
+3. `phi2_toep` is read from DRAM about **once per group of coils** ([§2.4](#24-coil-groups-phi2_toep-is-read-once-per-group)).
 
 With them the block-diagonal stage takes 20–25 % of the GPU time and runs close to the DRAM
 bandwidth. The two FFTs are then about 70 % of the time on the H100.
@@ -113,63 +113,13 @@ nothing spills to local memory. Keeping the kernel out of local memory is worth 
 block-diagonal stage (TITAN RTX, stack problem).
 
 **Range of $L$.** Up to $L = 30$ (`MR_BD_MAX_L`), one coil's two vectors ($4L$ registers) plus
-addressing fit in the register file. Larger ranks use the tiled kernels of §2.5, which keep the
+addressing fit in the register file. Larger ranks use the tiled kernels of [§2.3](#23-ranks-above-30-tiled-kernels), which keep the
 vectors in shared memory instead.
 
-### 2.3 Coil groups: `phi2_toep` is read once per group
-
-The plan processes coils in groups (default 4, `MR_AHA_CUDA_COIL_GROUP`):
-
-- the padded grids of a group sit side by side in one buffer `[Mx, My, Mz, L, group]`;
-- **one batched cuFFT** (`cufftMakePlanMany64` over `group · L` volumes) transforms all of them;
-- **one block-diagonal launch** serves the whole group.
-
-In that launch each thread owns one k-space location and processes the group's coils two at a
-time (`PAIR`, for $L \le 16$). Every element of `phi2_toep` it loads is applied to both coils'
-vectors from registers, so a coil pair costs one read. The elements loaded for one pair are still
-in the L2 cache when the same thread handles the next pair. `phi2_toep` therefore comes from DRAM
-about **once per group**.
-
-For the stack problem on the TITAN RTX, groups of 2 take the block-diagonal stage from 408 ms
-(specialised kernels, one coil at a time) to 243 ms. The kernel then moves about 570 GB/s; the
-card's peak is 672 GB/s.
-
-**Memory decides the group size.** Each coil in a group needs one padded grid (2.2 GB for the
-stack problem, 3.1 GB for 3D), and the Toeplitz kernel already occupies most of the GPU. At plan
-creation the library:
-
-1. queries the size of the cuFFT work area without allocating it (`cufftSetAutoAllocation(0)`);
-2. adds the padded grids and the index map of the masked operator (§2.4);
-3. shrinks the group, down to one coil, until everything fits `mem_fraction` (default 0.5) of the
-   free memory.
-
-Both cuFFT plans (the full group and the smaller last group) share one work area. The default of 4
-fits every benchmark problem on the 80 GB H100.
-
-### 2.4 Masked operator: in place, through an index map
-
-A masked `phi2_toep` keeps only selected locations. The masked kernel works like the dense one,
-with one thread per grid location. Each thread looks up its location in an `int32` map
-`inv[Mx, My, Mz]`:
-
-- `inv[j] = m`: the location's block is column `m` of the `[num_masked, (L^2+L)/2]` kernel, and
-  the thread multiplies in place.
-- `inv[j] = -1`: the location is outside the mask. The thread writes zeros for every rank and
-  coil, which is the "zero outside the mask" semantics, in the same pass.
-
-The map is rebuilt at every execution, because the caller may pass a different mask each time.
-That takes a memset and one pass over the mask, about 0.2 ms. The map costs 4 bytes per grid
-location (92 MB for the stack problem), and it is the only extra buffer the masked operator needs.
-For a sorted mask, consecutive threads read consecutive kernel columns, so the reads stay
-coalesced.
-
-The effect: masked operators are 3–11 % faster than unmasked ones, and the masked 3D problem fits
-on the 24 GB TITAN RTX.
-
-### 2.5 Ranks above 30: tiled kernels
+### 2.3 Ranks above 30: tiled kernels
 
 Above $L = 30$ the rank vectors of one location no longer fit in registers, so the specialised
-kernels of §2.2 stop there. Ranks from 31 to 512 (`MR_BDT_MAX_L`) use the tiled kernels
+kernels of [§2.2](#22-kernels-specialised-on-l-everything-in-registers) stop there. Ranks from 31 to 512 (`MR_BDT_MAX_L`) use the tiled kernels
 `mr_k_bdt<NC, OPT, MASKED>` (`src/cuda/mr_kernels_bdt.cu`). They follow the same three rules as
 the specialised kernels, with shared memory where those use registers.
 
@@ -188,7 +138,7 @@ The block-diagonal stage matters more as $L$ grows: at $L = 72$ `phi2_toep` hold
 location, against 72 values of data.
 
 **One tile of locations per thread block.** A block of 256 threads owns a *tile* of 16
-consecutive grid locations and a batch of up to 4 coils of the coil group (§2.3):
+consecutive grid locations and a batch of up to 4 coils of the coil group ([§2.4](#24-coil-groups-phi2_toep-is-read-once-per-group)):
 
 1. The block stages the inputs of its tile, `[coil, rank, location]`, in shared memory.
 2. It walks the stored triangle in *panels* of whole stored columns. Each panel is copied from
@@ -196,7 +146,7 @@ consecutive grid locations and a batch of up to 4 coils of the coil group (§2.3
    other in `phi2_toep`, so these loads are coalesced.
 3. Each thread owns one location and a few of its outputs, with one accumulator per output and
    coil in registers. It adds every contribution the panel holds to them, reading the panel and
-   the inputs from shared memory. As in §2.1, one stored element $A_{rc}$ feeds two outputs
+   the inputs from shared memory. As in [§2.1](#21-each-stored-element-is-read-once), one stored element $A_{rc}$ feeds two outputs
    ($y_c$ directly, $y_r$ through its conjugate).
 4. After the last panel the block writes the outputs back in place.
 
@@ -226,8 +176,8 @@ would leave a panel of only 93 elements there and take 89 ms, against 86 ms with
 tuning.
 
 **What stays the same.** The tiled kernels have the contract of the specialised ones: they work
-in place on the padded grids, the masked variant goes through the index map of §2.4, they serve
-coil groups (§2.3), and they accept the location ranges of the remainder split (§3.2). The plan
+in place on the padded grids, the masked variant goes through the index map of [§2.5](#25-masked-operator-in-place-through-an-index-map), they serve
+coil groups ([§2.4](#24-coil-groups-phi2_toep-is-read-once-per-group)), and they accept the location ranges of the remainder split ([§3.2](#32-remainder-split-by-rank)). The plan
 launches both families through the same two functions (`mr_bd_launch_dense`,
 `mr_bd_launch_masked`). The generic kernels remain as the fallback for a mask of more than 2³¹
 locations and behind `MR_AHA_CUDA_GENERIC_BD=1`; `MR_AHA_CUDA_TILED_BD=1` selects the tiled
@@ -247,6 +197,56 @@ the tiled kernels it gains 2.5×, in step with the other problems.
 
 On the H100 the block-diagonal stage of the masked operator takes 22.3 of 32.9 ms, and each of
 the two FFTs 4.1 ms.
+
+### 2.4 Coil groups: `phi2_toep` is read once per group
+
+The plan processes coils in groups (default 4, `MR_AHA_CUDA_COIL_GROUP`):
+
+- the padded grids of a group sit side by side in one buffer `[Mx, My, Mz, L, group]`;
+- **one batched cuFFT** (`cufftMakePlanMany64` over `group · L` volumes) transforms all of them;
+- **one block-diagonal launch** serves the whole group.
+
+In that launch each thread owns one k-space location and processes the group's coils two at a
+time (`PAIR`, for $L \le 16$). Every element of `phi2_toep` it loads is applied to both coils'
+vectors from registers, so a coil pair costs one read. The elements loaded for one pair are still
+in the L2 cache when the same thread handles the next pair. `phi2_toep` therefore comes from DRAM
+about **once per group**.
+
+For the stack problem on the TITAN RTX, groups of 2 take the block-diagonal stage from 408 ms
+(specialised kernels, one coil at a time) to 243 ms. The kernel then moves about 570 GB/s; the
+card's peak is 672 GB/s.
+
+**Memory decides the group size.** Each coil in a group needs one padded grid (2.2 GB for the
+stack problem, 3.1 GB for 3D), and the Toeplitz kernel already occupies most of the GPU. At plan
+creation the library:
+
+1. queries the size of the cuFFT work area without allocating it (`cufftSetAutoAllocation(0)`);
+2. adds the padded grids and the index map of the masked operator ([§2.5](#25-masked-operator-in-place-through-an-index-map));
+3. shrinks the group, down to one coil, until everything fits `mem_fraction` (default 0.5) of the
+   free memory.
+
+Both cuFFT plans (the full group and the smaller last group) share one work area. The default of 4
+fits every benchmark problem on the 80 GB H100.
+
+### 2.5 Masked operator: in place, through an index map
+
+A masked `phi2_toep` keeps only selected locations. The masked kernel works like the dense one,
+with one thread per grid location. Each thread looks up its location in an `int32` map
+`inv[Mx, My, Mz]`:
+
+- `inv[j] = m`: the location's block is column `m` of the `[num_masked, (L^2+L)/2]` kernel, and
+  the thread multiplies in place.
+- `inv[j] = -1`: the location is outside the mask. The thread writes zeros for every rank and
+  coil, which is the "zero outside the mask" semantics, in the same pass.
+
+The map is rebuilt at every execution, because the caller may pass a different mask each time.
+That takes a memset and one pass over the mask, about 0.2 ms. The map costs 4 bytes per grid
+location (92 MB for the stack problem), and it is the only extra buffer the masked operator needs.
+For a sorted mask, consecutive threads read consecutive kernel columns, so the reads stay
+coalesced.
+
+The effect: masked operators are 3–11 % faster than unmasked ones, and the masked 3D problem fits
+on the 24 GB TITAN RTX.
 
 
 ## 3. Multi-GPU
@@ -502,7 +502,7 @@ few milliseconds. For comparison, the Toeplitz method applies the 2D 320², $L =
 The tests are described in [Testing](../development/testing.md). The checks behind this note:
 
 - **Specialised and tiled against generic kernels.** `tests/check_bd_kernels.py` applies the
-  operator with the default kernels and with the generic ones for 14 ranks from 1 to 130, both
+  operator with the optimized kernels and with the generic ones for 14 ranks from 1 to 130, both
   triangles, masked and unmasked, with coil groups of 1, 2 and 4. It also forces the tiled
   kernels at every rank, with coil batches of 1, 2 and 4. All 504 combinations agree to
   single-precision rounding (worst relative difference 2.8·10⁻⁷).

@@ -60,7 +60,7 @@ keep those reads to a minimum:
   thread block stages them in shared memory for a tile of 16 grid locations and up to 4 coils.
   It copies the stored triangle from DRAM panel by panel, once for all of them. On `2d72`
   ($L = 72$) this is 3 to 9 times faster than the generic kernels
-  ([details](performance.md#25-ranks-above-30-tiled-kernels)).
+  ([details](performance.md#23-ranks-above-30-tiled-kernels)).
 
 The generic shared-memory kernels, one coil at a time, remain as the fallback for a mask of more
 than 2³¹ locations. All three kernel families agree to single-precision rounding

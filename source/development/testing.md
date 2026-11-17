@@ -69,7 +69,7 @@ python tests/check_bd_kernels.py
 
 Both backends use block-diagonal kernels specialised on `L`. For larger ranks the CUDA backend
 uses tiled kernels (31 to 512) and the Metal backend falls back to generic kernels. This test
-applies the operator with the default and the generic kernels on random inputs for many ranks
+applies the operator with the optimized and the generic kernels on random inputs for many ranks
 (up to 130 on CUDA), both triangulations, unmasked and masked, with several coil-group sizes,
 and checks that they agree to single-precision rounding. On CUDA it also forces the tiled
 kernels at every rank, with coil batches of 1, 2 and 4.
