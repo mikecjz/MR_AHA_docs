@@ -1,5 +1,24 @@
 # Benchmarks
 
+One $A^H A$ of MR_AHA's Toeplitz operator (the faster of masked and unmasked), against the NUFFT
+operator with the same interface:
+
+| problem | TITAN RTX | L40S | H100 | Apple M3 Ultra |
+|---|---:|---:|---:|---:|
+| 2D radial 160², $L = 6$, 16 coils | 2.1 ms (17×) | 0.43 ms (59×) | 0.53 ms (12×) | 1.7 ms (46×) |
+| stack-of-stars 320² × 56, $L = 12$, 12 coils | 0.96 s (5.5×) | 0.74 s (3.9×) | 0.17 s | 0.84 s (7.3×) |
+| 3D kooshball 160³, $L = 12$, 12 coils | 1.44 s (8.2×) | 1.02 s (3.7×) | 0.23 s (8.8×) | 1.10 s (18×) |
+
+The speed-up over the NUFFT operator on the same GPU is in brackets (the H100 stack NUFFT was
+not measured at this size). On three H100s the stack and
+3D operators take 63 ms and 83 ms.
+
+| Section | What it measures |
+|---|---|
+| [Single GPU](single-gpu.md) | Toeplitz against NUFFT, one $A^H A$ and 20 CG iterations, and their accuracy, on a TITAN RTX, an L40S, an H100 and an Apple M3 Ultra |
+| [Multi GPU](multi-gpu.md) | scaling of one $A^H A$, of the operator set-up and of CG over several GPUs, on L40S and H100 nodes |
+| [Julia and BART](other-libraries.md) | MR_AHA against BART and MRISubspaceRecon.jl: one $A^H A$, 20 CG iterations, memory and accuracy, on a TITAN RTX, an L40S and an H100 |
+
 ## Measure it yourself
 
 [MR_AHA_benchmarks](https://github.com/mikecjz/MR_AHA_benchmarks) holds one script per language
@@ -40,20 +59,8 @@ bench_aha('problem', 'stack', 'gpus', [1 2 4])
 The problems are synthetic presets with adjustable sizes, or your own data file. The
 repository's README lists every option.
 
-## Published studies
-
-The pages of this section record the measurements made while the library was developed.
-
-| Study | Question |
-|---|---|
-| [Main study](results.md) | Toeplitz against NUFFT, one $A^H A$ and 20 CG iterations, on a TITAN RTX, an L40S and an Apple M3 Ultra |
-| [Neighbourhood mask](neighbour-mask.md) | how much of the grid the mask keeps and how accurate the masked operator is, for radii 1 to 8 |
-| [CUDA optimisation and multi-GPU](cuda-multigpu.md) | the default CUDA kernels against the generic ones, and multi-GPU scaling on H100s |
-| [VkFFT on Metal](vkfft.md) | whether VkFFT's Metal backend is accurate and fast enough |
-| [Julia and BART](other-libraries.md) | MR_AHA against BART and MRISubspaceRecon.jl: one $A^H A$, 20 CG iterations, memory and accuracy, on a TITAN RTX, an L40S and an H100 |
-
 ```{note}
-These studies were run with scripts that lived in the `benchmarks/` folder of MR_AHA, which
+The older measurements were run with scripts that lived in the `benchmarks/` folder of MR_AHA, which
 needed data files that are not public. The folder was removed when the benchmarks moved to
 their own repository; the published part of it is still in MR_AHA's history, at commit
 [`b4fb00c`](https://github.com/mikecjz/MR_AHA/tree/b4fb00c/benchmarks), and the pages link

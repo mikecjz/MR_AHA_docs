@@ -1,10 +1,14 @@
+---
+orphan: true
+---
+
 # VkFFT-Metal feasibility check for the Apple-silicon backend
 
 The Toeplitz operator spends its FFT time on one forward and one inverse batched C2C transform per
 coil, on the zero-padded grid `[Mx, My, (Mz), L]` (column-major, batch `L`, unnormalised in both
 directions, exactly as `cufftExecC2C` in `src/cuda/mr_aha.cu`). This study checks that VkFFT's Metal backend
 computes that transform accurately and fast on an Apple M3 Ultra, at the sizes of the three
-benchmark problems of the [main study](results.md).
+benchmark problems of the [single-GPU benchmarks](single-gpu.md).
 
 The files named below are in the `benchmarks/vkfft/` folder of MR_AHA (last published at commit
 `b4fb00c`).

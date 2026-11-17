@@ -8,7 +8,8 @@ ranks above 30 in §2.5), multi-GPU (§3.1 to
 * For a short summary, read [Implementation notes](implementation.md).
 * For how to use multi-GPU, read [Multi-GPU](../guide/multi-gpu.md).
 * For the full measurements, read
-  [CUDA operator optimisation and multi-GPU](../benchmarks/cuda-multigpu.md).
+  [Benchmarks: Single GPU](../benchmarks/single-gpu.md) and
+  [Multi GPU](../benchmarks/multi-gpu.md).
 
 The gains at a glance, for 12 coils and $L = 12$:
 

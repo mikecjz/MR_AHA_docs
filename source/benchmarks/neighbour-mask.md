@@ -1,3 +1,7 @@
+---
+orphan: true
+---
+
 # Neighbourhood mask
 
 This report tests the k-space mask of the masked Toeplitz operator: keep only the grid locations
@@ -30,7 +34,7 @@ three radii, next to the error of the unmasked operator.
 | 15680-spoke kooshball | **53.9 % / 4.3·10⁻⁶** | 56.9 % / 4.1·10⁻⁶ | 62.8 % / 4.0·10⁻⁶ | ≈ 3.8·10⁻⁶ ¹ |
 
 ¹ The unmasked 3D kernel does not fit next to the test data on the 24 GB TITAN RTX. The value given
-is the unmasked Toeplitz-vs-NUFFT difference measured on the L40S in the [main study](results.md).
+is the unmasked Toeplitz-vs-NUFFT difference measured on the L40S in the [single-GPU benchmarks](single-gpu.md).
 
 * **Dense trajectories (280 radial spokes, kooshball): r = 2 is enough.** The error is 3.3·10⁻⁶
   for the 280-spoke radial problem and 4.3·10⁻⁶ in 3D, within a factor of three of the unmasked

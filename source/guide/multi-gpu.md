@@ -142,4 +142,4 @@ explain the mechanism and give all measurements.
 * The scripts of [MR_AHA_benchmarks](https://github.com/mikecjz/MR_AHA_benchmarks) time the
   set-up and the application of both methods on any number of GPUs.
 * Measured scaling is in
-  [CUDA operator optimisation and multi-GPU](../benchmarks/cuda-multigpu.md).
+  [Benchmarks: Multi GPU](../benchmarks/multi-gpu.md).

@@ -148,10 +148,8 @@ Performance notes <background/performance>
 :hidden:
 
 Overview <benchmarks/index>
-Main study <benchmarks/results>
-Neighbourhood mask <benchmarks/neighbour-mask>
-CUDA optimisation and multi-GPU <benchmarks/cuda-multigpu>
-VkFFT on Metal <benchmarks/vkfft>
+Single GPU <benchmarks/single-gpu>
+Multi GPU <benchmarks/multi-gpu>
 Julia and BART <benchmarks/other-libraries>
 ```
 
