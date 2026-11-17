@@ -12,20 +12,44 @@ the convention is exact for even and odd matrix sizes alike.
 
 ## Array shapes
 
-| Array | 2D | 3D and stack |
-| ----- | -- | ------------ |
-| `x` | `[Nx, Ny, L]` | `[Nx, Ny, Nz, L]` |
-| `SEs` | `[Nx, Ny, Ncoils]` | `[Nx, Ny, Nz, Ncoils]` |
-| `phi2_toep` (unmasked) | `[Mx, My, (L²+L)/2]` | `[Mx, My, Mz, (L²+L)/2]` |
-| `phi2_toep` (masked) | `[num_masked, (L²+L)/2]` | `[num_masked, (L²+L)/2]` |
-| `phi2` | `[Ntrajs, L, L]` | `[Ntrajs, L, L]`, or `[Ntrajs, Nkz, L, L]` for stack (centred kz order) |
-| `traj` | `[Ntrajs, Nkx, 2]` | `[Ntrajs, Nkx, 3]`, or `[Ntrajs, Nkx, 2]` for stack |
-| `AhAx` | same as `x` | same as `x` |
+Dimension symbols used below:
 
-There is one sensitivity map per coil; it is shared by every rank.
+* `Nx`, `Ny`, `Nz` — image matrix size (`config.n_dim`). `Nz` is the number of slices / kz
+  partitions for stack and 3D; 2D has no `Nz`.
+* `L` — number of subspace ranks (temporal basis functions, `config.L`).
+* `Ncoils` — number of receive coils.
+* `Mx`, `My`, `Mz` — size of the upsampled (oversampled) Toeplitz grid (`config.phi2_dim`),
+  typically `2*Nx`, `2*Ny`, `2*Nz`. For stack, `Mz = Nz`: kz is already Cartesian and is not
+  upsampled.
+* `num_masked` — number of upsampled-grid locations kept by the mask (see [Masking](masking.md)).
+* `Ntrajs` — number of readouts (spokes, spiral interleaves, …).
+* `Nkx` — number of k-space samples along one readout.
+* `Nkz` — number of kz encodes of a stack acquisition; always equal to `Nz`.
 
-`traj` holds coordinates in **radians per unit of the un-padded image grid**, i.e. the usual
-$[-\pi, \pi)$ range.
+The arrays:
+
+* **`x`** — the subspace image: one complex image per rank, with the rank as the last dimension.
+  * 2D: `[Nx, Ny, L]`
+  * 3D and stack: `[Nx, Ny, Nz, L]`
+* **`SEs`** — coil sensitivity maps, one per coil, shared by every rank.
+  * 2D: `[Nx, Ny, Ncoils]`
+  * 3D and stack: `[Nx, Ny, Nz, Ncoils]`
+* **`phi2_toep`** (unmasked) — the Toeplitz kernel: one packed Hermitian $L \times L$ block
+  ([triangular packing](#triangular-packing)) at every point of the upsampled grid.
+  * 2D: `[Mx, My, (L²+L)/2]`
+  * 3D and stack: `[Mx, My, Mz, (L²+L)/2]`
+* **`phi2_toep`** (masked) — the same kernel stored only at the `num_masked` grid locations
+  selected by the mask.
+  * 2D, 3D and stack: `[num_masked, (L²+L)/2]`
+* **`phi2`** — the [Gram block](#gram-blocks) $\Phi_2$ of each readout: a full $L \times L$
+  matrix per readout (and per kz encode for stack).
+  * 2D and 3D: `[Ntrajs, L, L]`
+  * stack: `[Ntrajs, Nkz, L, L]`, kz in centred order
+* **`traj`** — non-Cartesian k-space coordinates of every sample, the last dimension holding the
+  (kx, ky[, kz]) components. Stack holds only the in-plane coordinates; kz is Cartesian.
+  * 2D and stack: `[Ntrajs, Nkx, 2]`
+  * 3D: `[Ntrajs, Nkx, 3]`
+* **`AhAx`** — the output $A^H A x$; same shape as `x`.
 
 ## `config`
 
