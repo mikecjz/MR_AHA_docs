@@ -76,7 +76,7 @@ coefficients, and a random Hermitian $L \times L$ Gram block per readout.
 BART cannot hold all of these on any of the three GPUs. Its problems are therefore fitted to
 each GPU: a preset that BART cannot hold even in its most frugal mode is shrunk step by step
 until it fits (the stack loses slices, the kooshball matrix size, `2d72` ranks). Each GPU thus
-gets the largest problem of the ladder that BART holds on it (BART's memory in brackets):
+gets the largest problem of the ladder that BART holds on it (BART's memory in parentheses):
 
 | Preset | TITAN RTX (24 GB) | L40S (45 GB) | H100 (80 GB) |
 |---|---|---|---|
@@ -171,7 +171,7 @@ of the warm creations (the first creation in Julia also compiles, about 1.7 s fo
 | `stack` | 1011 ms (18.5 GB) | fails on a 49 GB request | fails on a 26 GB request | fails on a 26 GB request |
 | `3d` | out of memory | fails on a 35 GB request | fails on a 152 GB request | fails on a 19 GB request |
 
-**MRISubspaceRecon.jl: one $A^H A$**, in ms, set-up in s in brackets
+**MRISubspaceRecon.jl: one $A^H A$**, in ms, set-up in s in parentheses
 
 | Problem | MRISubspaceRecon.jl | MR_AHA masked | MR_AHA Toeplitz |
 |---|---:|---:|---:|
@@ -220,7 +220,7 @@ of the warm creations (the first creation in Julia also compiles, about 1.7 s fo
 | `stack` | 753 ms (22.6 GB) | fails on a 49 GB request | fails on a 213 GB request | fails on a 26 GB request |
 | `3d` | 1062 ms (31.5 GB) | fails on a 281 GB request | fails on a 152 GB request | fails on a 19 GB request |
 
-**MRISubspaceRecon.jl: one $A^H A$**, in ms, set-up in s in brackets
+**MRISubspaceRecon.jl: one $A^H A$**, in ms, set-up in s in parentheses
 
 | Problem | MRISubspaceRecon.jl | MR_AHA masked | MR_AHA Toeplitz |
 |---|---:|---:|---:|
@@ -269,7 +269,7 @@ of the warm creations (the first creation in Julia also compiles, about 1.7 s fo
 | `stack` | 178 ms (22.6 GB) | fails on a 393 GB request | fails on a 213 GB request | fails on a 26 GB request |
 | `3d` | 253 ms (31.5 GB) | fails on a 281 GB request | fails on a 152 GB request | 761 ms (38.3 GB) |
 
-**MRISubspaceRecon.jl: one $A^H A$**, in ms, set-up in s in brackets
+**MRISubspaceRecon.jl: one $A^H A$**, in ms, set-up in s in parentheses
 
 | Problem | MRISubspaceRecon.jl | MR_AHA masked | MR_AHA Toeplitz |
 |---|---:|---:|---:|

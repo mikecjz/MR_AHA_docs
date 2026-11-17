@@ -27,7 +27,7 @@ stays on one GPU.
 **Timing.** The same as for [Single GPU](single-gpu.md#problems): set-up is the creation of the
 operator, with the kernel on every GPU (median of 2 creations after a first one); one $A^H A$ is
 the median of 10 calls after 2 warm-up calls; CG is 20 iterations from zero. The speed-up in
-brackets is against the same operator on one GPU of the same node.
+parentheses is against the same operator on one GPU of the same node.
 
 ## Runtime
 
@@ -50,7 +50,7 @@ The TITAN RTX has no peer access, so the GPUs exchange data through host memory.
 | `3d` | does not fit | does not fit | does not fit |
 | `3d` masked | 18.91 s | 15.76 s | **11.40 s** |
 
-**One $A^H A$** (speed-up over one GPU in brackets)
+**One $A^H A$** (speed-up over one GPU in parentheses)
 
 | problem | 1 GPU | 2 GPUs | 4 GPUs |
 |---|---:|---:|---:|
@@ -61,7 +61,7 @@ The TITAN RTX has no peer access, so the GPUs exchange data through host memory.
 | `3d` | does not fit | does not fit | does not fit |
 | `3d` masked | 1.38 s | **0.92 s** (1.51×) | 1.01 s (1.37×) |
 
-**20 CG iterations** (speed-up over one GPU in brackets)
+**20 CG iterations** (speed-up over one GPU in parentheses)
 
 | problem | 1 GPU | 2 GPUs | 4 GPUs |
 |---|---:|---:|---:|
@@ -95,7 +95,7 @@ GPUs 2 and 3 each on its own NUMA node.
 | `3d` | 8.45 s | **5.42 s** | 9.91 s |
 | `3d` masked | 7.34 s | **5.14 s** | 10.32 s |
 
-**One $A^H A$** (speed-up over one GPU in brackets)
+**One $A^H A$** (speed-up over one GPU in parentheses)
 
 | problem | 1 GPU | 2 GPUs | 4 GPUs |
 |---|---:|---:|---:|
@@ -106,7 +106,7 @@ GPUs 2 and 3 each on its own NUMA node.
 | `3d` | 1.06 s | 0.58 s (1.83×) | **0.35 s** (3.07×) |
 | `3d` masked | 1.02 s | 0.55 s (1.84×) | **0.34 s** (3.03×) |
 
-**20 CG iterations** (speed-up over one GPU in brackets)
+**20 CG iterations** (speed-up over one GPU in parentheses)
 
 | problem | 1 GPU | 2 GPUs | 4 GPUs |
 |---|---:|---:|---:|
@@ -141,7 +141,7 @@ Four NVIDIA H100 80GB (SXM) with NVLink between every pair.
 | `3d` | 4.09 s | 2.79 s | **2.35 s** |
 | `3d` masked | 4.82 s | 2.83 s | **2.37 s** |
 
-**One $A^H A$** (speed-up over one GPU in brackets)
+**One $A^H A$** (speed-up over one GPU in parentheses)
 
 | problem | 1 GPU | 2 GPUs | 4 GPUs |
 |---|---:|---:|---:|
@@ -152,7 +152,7 @@ Four NVIDIA H100 80GB (SXM) with NVLink between every pair.
 | `3d` | 252 ms | 130 ms (1.94×) | **70.3 ms** (3.59×) |
 | `3d` masked | 232 ms | 120 ms (1.93×) | **64.3 ms** (3.60×) |
 
-**20 CG iterations** (speed-up over one GPU in brackets)
+**20 CG iterations** (speed-up over one GPU in parentheses)
 
 | problem | 1 GPU | 2 GPUs | 4 GPUs |
 |---|---:|---:|---:|

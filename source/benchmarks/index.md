@@ -10,7 +10,7 @@ operator with the same interface:
 | stack-of-stars 320² × 56, $L = 12$, 12 coils | 0.98 s (2.6×) | 0.74 s (2.2×) | 0.17 s (4.7×) | 0.89 s (7.0×) |
 | 3D kooshball 160³, $L = 12$, 12 coils | 1.39 s (5.6×) | 1.02 s (5.6×) | 0.23 s (8.8×) | 1.10 s (18×) |
 
-The speed-up over the NUFFT operator on the same GPU is in brackets. On four H100s the stack and
+The speed-up over the NUFFT operator on the same GPU is in parentheses. On four H100s the stack and
 3D operators take 51 ms and 64 ms.
 
 | Section | What it measures |
