@@ -1,3 +1,5 @@
+“AHA! It’s so fast!”
+
 # MR_AHA
 
 ```{image} _static/banner-light.svg
