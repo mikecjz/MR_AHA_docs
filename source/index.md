@@ -1,5 +1,3 @@
-“AHA! It’s so fast!”
-
 # MR_AHA
 
 ```{image} _static/banner-light.svg
@@ -11,6 +9,8 @@
 :class: only-dark
 :alt: "MR-A^H A: GPU forward normal operator for non-Cartesian MRI"
 ```
+
+“AHA! It’s so fast!”
 
 MR_AHA is a highly optimized GPU library for evaluating the forward normal operator $A^H A$ for
 **non-Cartesian MRI with low-rank (subspace) modelling**. It uses a Toeplitz embedding; a
