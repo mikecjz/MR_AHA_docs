@@ -84,7 +84,7 @@ the PSF memory and is 5–10 % slower than the full PSF.
 
 In v1.0.01 this path also applies the complex conjugate of the Gram blocks, so it is wrong for a
 complex temporal basis and right only for a real one (see
-[Comparison with BART and MRISubspaceRecon.jl](other-libraries.md)).
+[MR_AHA vs BART](vs-bart.md#accuracy)).
 
 ## Memory: all coils at once
 

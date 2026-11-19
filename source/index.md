@@ -152,7 +152,8 @@ Performance notes <background/performance>
 Overview <benchmarks/index>
 Single GPU <benchmarks/single-gpu>
 Multi GPU <benchmarks/multi-gpu>
-Julia and BART <benchmarks/other-libraries>
+vs BART <benchmarks/vs-bart>
+vs MRISubspaceRecon.jl <benchmarks/vs-mrisubspacerecon>
 ```
 
 ```{toctree}
