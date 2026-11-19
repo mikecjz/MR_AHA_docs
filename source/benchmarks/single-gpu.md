@@ -222,7 +222,7 @@ their 20-iteration CG solutions, is the same on every GPU to the digits shown:
   four times the set-up time.
 * **For sparse trajectories the mask costs accuracy.** On a two-arm spiral, a mask radius of 2
   keeps 4 % of the grid at an operator error of 3·10⁻², radius 8 keeps 14 % at 3·10⁻³; see
-  [Neighborhood mask](neighbour-mask.md).
+  [Neighborhood mask](neighbor-mask.md).
 
 The runtime measurements give the same operator differences on the NVIDIA GPUs: 0.9–1.1·10⁻⁶ in
 2D and stack-of-stars and 2.5·10⁻⁶ in 3D (1.1–1.6·10⁻⁶ and 1.9·10⁻⁵ on the M3 Ultra).

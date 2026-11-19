@@ -99,7 +99,7 @@ cell of that plane are shown. Kept locations are blue.
 
 ### Two-arm spiral (256², 512² grid)
 
-![spiral masks](img/neighbour_mask_spiral.png)
+![spiral masks](img/neighbor_mask_spiral.png)
 
 | mask | grid kept | image ÷ out | image ÷ in | white noise ÷ out | white noise ÷ in |
 |---|---|---|---|---|---|
@@ -113,7 +113,7 @@ cell of that plane are shown. Kept locations are blue.
 
 ### 64-spoke radial (160², 320² grid)
 
-![radial64 masks](img/neighbour_mask_radial64.png)
+![radial64 masks](img/neighbor_mask_radial64.png)
 
 | mask | grid kept | image ÷ out | image ÷ in | white noise ÷ out | white noise ÷ in |
 |---|---|---|---|---|---|
@@ -127,7 +127,7 @@ cell of that plane are shown. Kept locations are blue.
 
 ### 280-spoke radial (320², 640² grid)
 
-![radial280 masks](img/neighbour_mask_radial280.png)
+![radial280 masks](img/neighbor_mask_radial280.png)
 
 | mask | grid kept | image ÷ out | image ÷ in | white noise ÷ out | white noise ÷ in |
 |---|---|---|---|---|---|
@@ -141,7 +141,7 @@ cell of that plane are shown. Kept locations are blue.
 
 ### 15680-spoke kooshball (160³, 320³ grid)
 
-![kooshball masks](img/neighbour_mask_kooshball.png)
+![kooshball masks](img/neighbor_mask_kooshball.png)
 
 | mask | grid kept | image ÷ out | image ÷ in | white noise ÷ out | white noise ÷ in |
 |---|---|---|---|---|---|
