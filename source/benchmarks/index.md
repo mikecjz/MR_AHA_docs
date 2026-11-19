@@ -6,7 +6,7 @@ operator with the same interface:
 | problem | TITAN RTX | L40S | H100 | Apple M3 Ultra |
 |---|---:|---:|---:|---:|
 | 2D radial 160², $L = 6$, 16 coils | 2.19 ms (8.9×) | 0.43 ms (30×) | 0.52 ms (13×) | 1.68 ms (47×) |
-| 2D radial 320², $L = 72$, 12 coils | 199 ms (3.6×) | 86 ms (5.1×) | 33 ms (6.1×) | 1.19 s (0.9×) |
+| 2D radial 320², $L = 72$, 12 coils | 199 ms (3.6×) | 86 ms (5.1×) | 33 ms (6.1×) | 182 ms (5.8×) |
 | stack-of-stars 320² × 56, $L = 12$, 12 coils | 0.98 s (2.6×) | 0.74 s (2.2×) | 0.17 s (4.7×) | 0.89 s (7.0×) |
 | 3D kooshball 160³, $L = 12$, 12 coils | 1.39 s (5.6×) | 1.02 s (5.6×) | 0.23 s (8.8×) | 1.10 s (18×) |
 

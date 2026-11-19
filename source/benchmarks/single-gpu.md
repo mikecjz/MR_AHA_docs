@@ -15,13 +15,13 @@ settings.
   1.6–4.7 s for the large problems on an H100 and up to 18.6 s (masked 3D on the TITAN RTX).
   The kernel pays for itself within 3 applications of $A^H A$ for the stack-of-stars and 3D
   problems and within 14 for the 2D ones, so set-up plus 20 CG iterations still finishes
-  sooner with Toeplitz, except for `2d72` on the M3 Ultra.
+  sooner with Toeplitz.
 * **The fastest GPU is the H100**: 0.52 ms (`2d`), 33 ms (`2d72`), 0.17 s (`stack`) and 0.23 s
   (`3d`) per $A^H A$, and 4.7 s for 20 CG iterations in 3D.
-* **On the Apple M3 Ultra the high-rank `2d72` problem is the exception.** There the NUFFT
-  operator (mlx-nufft) is about 12 % faster than the masked Toeplitz operator: 1.06 s against
-  1.19 s per $A^H A$. On the other problems Toeplitz is 7–47× faster, and the large problems run
-  at about the speed of an L40S (0.89 s for the stack, 1.10 s in 3D).
+* **On the Apple M3 Ultra, Toeplitz is also faster than NUFFT (mlx-nufft) on every problem**:
+  7–47× per $A^H A$, and 5.8× on the high-rank `2d72` problem (182 ms against 1.06 s), where the
+  tiled block-diagonal kernels for $L > 32$ run it at about the speed of a TITAN RTX. The stack
+  and 3D problems run at about the speed of an L40S (0.89 s for the stack, 1.10 s in 3D).
 * **Both operators compute the same thing**: they agree to 1–4·10⁻⁶ per application, and the
   20-iteration CG solutions to 3–6·10⁻⁶ (see [Accuracy](#accuracy)).
 
@@ -181,7 +181,7 @@ mlx-nufft; `calc_toep` uses mlx-nufft and finishes in the library.
 | problem | NUFFT | Toeplitz | Toeplitz masked | Toeplitz speed-up |
 |---|---:|---:|---:|---:|
 | `2d` | 78.7 ms | **1.68 ms** | 1.94 ms | 46.8× |
-| `2d72` | **1.06 s** | 1.41 s | 1.19 s | 0.9× |
+| `2d72` | 1.06 s | 214 ms | **182 ms** | 5.8× |
 | `stack` | 6.29 s | 0.92 s | **0.89 s** | 7.0× |
 | `3d` | 19.85 s | 1.18 s | **1.10 s** | 18.0× |
 
@@ -190,12 +190,14 @@ mlx-nufft; `calc_toep` uses mlx-nufft and finishes in the library.
 | problem | NUFFT | Toeplitz | Toeplitz masked | Toeplitz speed-up |
 |---|---:|---:|---:|---:|
 | `2d` | 1.57 s | **0.038 s** | 0.043 s | 41.0× |
-| `2d72` | **21.45 s** | 28.74 s | 24.19 s | 0.9× |
+| `2d72` | 21.45 s | 5.04 s | **4.00 s** | 5.4× |
 | `stack` | 126.7 s | **18.88 s** | 20.01 s | 6.7× |
 | `3d` | 398.3 s | 25.60 s | **23.82 s** | 16.7× |
 
-For `2d72` the NUFFT operator is faster than either Toeplitz operator. The CG vector updates run on the
-CPU. The `2d` problem is too small to occupy the GPU.
+The `2d72` Toeplitz rows of $A^H A$ and CG use the tiled block-diagonal kernels for $L > 32$
+(see [Apple silicon](../guide/apple-silicon.md#performance)). Before them, the masked operator
+took 1.19 s per $A^H A$ and 24.19 s for 20 CG iterations, slower than NUFFT. The CG vector
+updates run on the CPU. The `2d` problem is too small to occupy the GPU.
 
 :::
 
@@ -237,6 +239,11 @@ The runtime tables were measured with `bench_aha.py` of
 python bench_aha.py --problem 2d 2d72 stack 3d --methods toeplitz nufft_c --mask both \
     --cg 20 --setup-reps 3          # nufft_native instead of nufft_c on Apple silicon
 ```
+
+The `2d72` Toeplitz rows of one $A^H A$ and 20 CG iterations on the M3 Ultra were measured again
+with MR_AHA [`961f7ef`](https://github.com/mikecjz/MR_AHA/tree/961f7ef), which adds the tiled
+Metal kernels (`--problem 2d72 --methods toeplitz --mask both --cg 20`). Its set-up and NUFFT
+rows are from the run above.
 
 The accuracy table comes from the original study, which used measured human 2D radial and
 stack-of-stars data and a synthetic kooshball. Its scripts and raw numbers are in MR_AHA's
