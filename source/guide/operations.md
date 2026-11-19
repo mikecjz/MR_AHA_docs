@@ -113,7 +113,7 @@ trajectory (`Phi_rt(:,idx) * Phi_rt(:,idx)'`, see
 
 1. pack each block into a triangle;
 2. type-1 cufinufft onto the upsampled grid;
-3. centred inverse FFT;
+3. centered inverse FFT;
 4. optional mask gather.
 
 The packaged Toeplitz operator calls `calc_toep` internally. A multi-GPU operator spreads the $(L^2+L)/2$ independent triangular components over the

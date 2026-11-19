@@ -78,7 +78,7 @@ mask = mr_aha.calc_mask(cfg, traj)                   # or your own indices
 op   = mr_aha.create_op(cfg, SEs, phi2, traj, mask)  # also sets cfg.num_masked
 ```
 
-`mask` holds **0-based** linear indices into the centred upsampled grid. See
+`mask` holds **0-based** linear indices into the centered upsampled grid. See
 [Masking](../guide/masking.md).
 
 ## Multi-GPU (CUDA)

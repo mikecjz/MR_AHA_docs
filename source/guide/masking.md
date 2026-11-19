@@ -1,6 +1,6 @@
 # Masking
 
-`mask` holds linear indices into the *centred* upsampled grid `phi2_dim`, 1-based in MATLAB and
+`mask` holds linear indices into the *centered* upsampled grid `phi2_dim`, 1-based in MATLAB and
 0-based in Python and C. Samples outside the mask contribute nothing. This is what makes a large 3D
 operator fit in GPU memory when the upsampled k-space support is sparse.
 
@@ -20,4 +20,4 @@ densely sampled test problems radius 2 is as accurate as the unmasked operator:
 It is less accurate on the 377-spoke 160² radial data (80 % kept, error 5·10⁻⁵) and on sparse
 trajectories (64 spokes: 5·10⁻⁴; two-arm spiral: 3·10⁻²). There, raise `mask_radius`.
 
-[Neighbourhood mask](../benchmarks/neighbour-mask.md) has the measurements for radii 1 to 8.
+[Neighborhood mask](../benchmarks/neighbor-mask.md) has the measurements for radii 1 to 8.

@@ -121,7 +121,7 @@ BART's MATLAB (`bart.m`) and Python (`bart.py`) interfaces do not call a library
 input array as a `.cfl` file, start the `bart` executable, and read the result back from a file.
 Nothing stays in GPU memory between calls, so every `bart pics` call:
 
-* starts a process and initialises CUDA;
+* starts a process and initializes CUDA;
 * writes and reads all arrays through the file system;
 * recomputes the PSF from the trajectory and the basis;
 * computes the scaling and the adjoint of the data, then iterates.

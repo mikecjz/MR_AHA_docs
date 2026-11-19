@@ -43,7 +43,7 @@ pad × S_c  →  forward FFT  →  block-diagonal multiply  →  inverse FFT  �
 ```
 
 `MR_AHA_CUDA_PROFILE=1` prints the GPU time of each stage (CUDA events between the stages, no
-extra synchronisation). With the generic kernels, on the TITAN RTX and the stack problem:
+extra synchronization). With the generic kernels, on the TITAN RTX and the stack problem:
 
 | stage | time | share |
 |---|---|---|
@@ -66,7 +66,7 @@ read decides the time of the stage.
 The optimized kernels follow three rules, explained in [§2](#2-one-gpu):
 
 1. each stored element of `phi2_toep` is read **once** per pass over the triangle ([§2.1](#21-each-stored-element-is-read-once));
-2. the rank vectors live in **registers**, because $L$ is a compile-time constant ([§2.2](#22-kernels-specialised-on--everything-in-registers));
+2. the rank vectors live in **registers**, because $L$ is a compile-time constant ([§2.2](#22-kernels-specialized-on--everything-in-registers));
 3. `phi2_toep` is read from DRAM about **once per group of coils** ([§2.4](#24-coil-groups-phi2_toep-is-read-once-per-group)).
 
 With them the block-diagonal stage takes 20–25 % of the GPU time and runs close to the DRAM
@@ -90,7 +90,7 @@ the block never has to be loaded. The results agree with the generic kernels to 
 rounding (`tests/check_bd_kernels.py`: both triangles, masked and unmasked, coil groups of 1, 2
 and 4).
 
-### 2.2 Kernels specialised on $L$: everything in registers
+### 2.2 Kernels specialized on $L$: everything in registers
 
 The kernels `mr_k_bd_dense_t<L, PAIR>` and `mr_k_bd_masked_t<L, PAIR>` (`src/cuda/mr_kernels_bd.cu`)
 are templates on the rank. They are instantiated for $L = 1 \ldots 30$ and selected at plan
@@ -118,10 +118,10 @@ vectors in shared memory instead.
 
 ### 2.3 Ranks above 30: tiled kernels
 
-Above $L = 30$ the rank vectors of one location no longer fit in registers, so the specialised
-kernels of [§2.2](#22-kernels-specialised-on--everything-in-registers) stop there. Ranks from 31 to 512 (`MR_BDT_MAX_L`) use the tiled kernels
+Above $L = 30$ the rank vectors of one location no longer fit in registers, so the specialized
+kernels of [§2.2](#22-kernels-specialized-on--everything-in-registers) stop there. Ranks from 31 to 512 (`MR_BDT_MAX_L`) use the tiled kernels
 `mr_k_bdt<NC, OPT, MASKED>` (`src/cuda/mr_kernels_bdt.cu`). They follow the same three rules as
-the specialised kernels, with shared memory where those use registers.
+the specialized kernels, with shared memory where those use registers.
 
 **Why large ranks need their own kernel.** Large ranks used to run the generic shared-memory
 kernels. Those lose time in three ways, which grow with $L$:
@@ -175,7 +175,7 @@ would leave a panel of only 93 elements there and take 89 ms, against 86 ms with
 `MR_AHA_CUDA_BDT_NC`, `MR_AHA_CUDA_BDT_P` and `MR_AHA_CUDA_BDT_BLOCKS` override the choice, for
 tuning.
 
-**What stays the same.** The tiled kernels have the contract of the specialised ones: they work
+**What stays the same.** The tiled kernels have the contract of the specialized ones: they work
 in place on the padded grids, the masked variant goes through the index map of [§2.5](#25-masked-operator-in-place-through-an-index-map), they serve
 coil groups ([§2.4](#24-coil-groups-phi2_toep-is-read-once-per-group)), and they accept the location ranges of the remainder split ([§3.2](#32-remainder-split-by-rank)). The plan
 launches both families through the same two functions (`mr_bd_launch_dense`,
@@ -213,7 +213,7 @@ in the L2 cache when the same thread handles the next pair. `phi2_toep` therefor
 about **once per group**.
 
 For the stack problem on the TITAN RTX, groups of 2 take the block-diagonal stage from 408 ms
-(specialised kernels, one coil at a time) to 243 ms. The kernel then moves about 570 GB/s; the
+(specialized kernels, one coil at a time) to 243 ms. The kernel then moves about 570 GB/s; the
 card's peak is 672 GB/s.
 
 **Memory decides the group size.** Each coil in a group needs one padded grid (2.2 GB for the
@@ -256,7 +256,7 @@ on the 24 GB TITAN RTX.
 $A^H A x = \sum_c (\ldots)_c$, and each coil's pipeline is independent. The operator object
 (`mr_op_create`, `src/cuda/mr_op.cu`; `create_op` in Python and MATLAB) gives each GPU a
 contiguous range of whole coils. With the Toeplitz method each GPU runs an ordinary single-GPU
-plan for its coils, with its own coil groups, specialised kernels and stream.
+plan for its coils, with its own coil groups, specialized kernels and stream.
 
 At creation every GPU receives a copy of `phi2_toep` (and the mask) and the sensitivity maps of
 its own coils. One application then only moves `x` in and a partial result out:
@@ -290,7 +290,7 @@ transposed twice:
 1. GPU $g$ pads and transforms its ranks $R_g$ (about $L/G$ of them);
 2. **all-to-all:** GPU $g$ sends the k-space slab $K_h$ (a contiguous range of about
    $M_xM_yM_z/G$ locations) of its ranks to GPU $h$, which then holds all $L$ ranks of $K_h$;
-3. GPU $h$ multiplies $K_h$ with its copy of the kernel (the specialised kernels take a location
+3. GPU $h$ multiplies $K_h$ with its copy of the kernel (the specialized kernels take a location
    range for this, `mr_bd_range`);
 4. all-to-all back, inverse FFT and crop of $R_g$.
 
@@ -335,7 +335,7 @@ GPUs at once: each GPU computes about $1/G$ of the kernel and receives the other
 its own link. The kernel is therefore on every GPU sooner than one GPU could compute it alone.
 
 **Why the work splits cleanly.** The $(L^2+L)/2$ triangular components of the kernel are
-independent: each one is a type-1 NUFFT, a centred inverse FFT and a scaling. Each fills one
+independent: each one is a type-1 NUFFT, a centered inverse FFT and a scaling. Each fills one
 contiguous slab of the output (`Mx*My*Mz` elements, or `num_masked` when masked). A range of
 components is therefore one contiguous byte range. It can be computed on any GPU and moved with
 a single `cudaMemcpyPeerAsync`. `calc_toep` works through a per-device context (`mr_toep_ctx`:
@@ -501,7 +501,7 @@ few milliseconds. For comparison, the Toeplitz method applies the 2D 320², $L =
 
 The tests are described in [Testing](../development/testing.md). The checks behind this note:
 
-- **Specialised and tiled against generic kernels.** `tests/check_bd_kernels.py` applies the
+- **Specialized and tiled against generic kernels.** `tests/check_bd_kernels.py` applies the
   operator with the optimized kernels and with the generic ones for 14 ranks from 1 to 130, both
   triangles, masked and unmasked, with coil groups of 1, 2 and 4. It also forces the tiled
   kernels at every rank, with coil batches of 1, 2 and 4. All 504 combinations agree to
@@ -519,6 +519,6 @@ The tests are described in [Testing](../development/testing.md). The checks behi
   - a GPU whose memory was filled on purpose gives a clean error that names that GPU.
 - **MATLAB device handling.** The MATLAB test also covers `clear mex`, `reset(gpuDevice)` and
   switching `gpuDevice` under a live operator.
-- **Reconstruction.** With the specialised kernels and coil groups, the 20-iteration CG solution
+- **Reconstruction.** With the specialized kernels and coil groups, the 20-iteration CG solution
   of the stack problem moves by 2.5·10⁻⁶. That is the run-to-run noise of the NUFFT operator
   (2.8·10⁻⁶).

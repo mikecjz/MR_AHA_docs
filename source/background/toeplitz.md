@@ -6,7 +6,7 @@ The $A^H A$ operator of MRI is [Toeplitz](https://en.wikipedia.org/wiki/Toeplitz
 arbitrary non-Cartesian trajectories ([Baron et al., MRM
 2018](https://onlinelibrary.wiley.com/doi/10.1002/mrm.26928)). A Toeplitz matrix can be embedded
 in a [circulant matrix](https://en.wikipedia.org/wiki/Circulant_matrix) of twice the size in each
-dimension, and a circulant matrix is [diagonalised by the
+dimension, and a circulant matrix is [diagonalized by the
 FFT](https://math.mit.edu/icg/resources/teaching/18.085-spring2015/toeplitz.pdf). Applying the
 operator then takes $O(N \log N)$ operations instead of the $O(N^2)$ of a general matrix-vector
 product:
@@ -25,7 +25,7 @@ with a NUFFT, once per trajectory ([Baron et al., MRM
 
 ## With a low-rank model
 
-With a low-rank (subspace) model the $A^H A$ operator is block-Toeplitz. It is diagonalised in the same way,
+With a low-rank (subspace) model the $A^H A$ operator is block-Toeplitz. It is diagonalized in the same way,
 except that $\Lambda$ becomes block-diagonal: one $L \times L$ block per upsampled k-space
 location. This block-diagonal multiplier is the gridded $\Phi\Phi^H$ operator, which the library
 calls `phi2_toep`.

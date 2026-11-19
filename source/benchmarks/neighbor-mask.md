@@ -2,7 +2,7 @@
 orphan: true
 ---
 
-# Neighbourhood mask
+# Neighborhood mask
 
 This report tests the k-space mask of the masked Toeplitz operator: keep only the grid locations
 close to the samples. It measures how much of the upsampled grid the mask keeps at each radius and
@@ -10,7 +10,7 @@ how accurate the masked operator is. CG convergence is not tested; only single-o
 is. The code is [`neighbour_mask.py`](https://github.com/mikecjz/MR_AHA/blob/b4fb00c/benchmarks/neighbour_mask.py). Raw numbers are in
 `results/titan_rtx/neighbour_mask_<problem>.json`, measured on a TITAN RTX.
 
-> **Outcome.** The neighbourhood mask is the library's `calc_mask`, with `mask_radius = 2` as the
+> **Outcome.** The neighborhood mask is the library's `calc_mask`, with `mask_radius = 2` as the
 > default. The library implementation gives masks bit-identical to the CuPy reference used here.
 > It was also checked on the full 377-spoke 2D radial data (160², not one of the four problems
 > below):
@@ -81,7 +81,7 @@ so its kept fraction is the same.
 
 Each masked Toeplitz $A^HA$ is compared with the NUFFT $A^HA$ (cufinufft, eps 10⁻⁶) on two
 inputs: the image above and complex white noise. The noise input is the worst case, because it puts
-equal energy at every spatial frequency. Each error is normalised in two ways:
+equal energy at every spatial frequency. Each error is normalized in two ways:
 
 * **÷ out:** $\|T_\text{mask}x - A^HAx\| / \|A^HAx\|$, relative to the operator's output;
 * **÷ in:** $\|T_\text{mask}x - A^HAx\| / (\|A^HA\|\,\|x\|)$, relative to the input times the
@@ -99,56 +99,56 @@ cell of that plane are shown. Kept locations are blue.
 
 ### Two-arm spiral (256², 512² grid)
 
-![spiral masks](img/neighbour_mask_spiral.png)
+![spiral masks](img/neighbor_mask_spiral.png)
 
 | mask | grid kept | image ÷ out | image ÷ in | white noise ÷ out | white noise ÷ in |
 |---|---|---|---|---|---|
-| neighbourhood r = 1 | 2.3% | 4.3·10⁻² | 4.5·10⁻³ | 6.0·10⁻² | 6.2·10⁻⁴ |
-| neighbourhood r = 2 | 4.0% | 2.9·10⁻² | 3.1·10⁻³ | 3.9·10⁻² | 4.0·10⁻⁴ |
-| neighbourhood r = 3 | 5.7% | 1.9·10⁻² | 2.0·10⁻³ | 2.6·10⁻² | 2.7·10⁻⁴ |
-| neighbourhood r = 4 | 7.4% | 1.6·10⁻² | 1.6·10⁻³ | 2.0·10⁻² | 2.0·10⁻⁴ |
-| neighbourhood r = 6 | 10.8% | 8.0·10⁻³ | 8.4·10⁻⁴ | 1.4·10⁻² | 1.4·10⁻⁴ |
-| neighbourhood r = 8 | 14.2% | 3.1·10⁻³ | 3.3·10⁻⁴ | 9.9·10⁻³ | 1.0·10⁻⁴ |
+| neighborhood r = 1 | 2.3% | 4.3·10⁻² | 4.5·10⁻³ | 6.0·10⁻² | 6.2·10⁻⁴ |
+| neighborhood r = 2 | 4.0% | 2.9·10⁻² | 3.1·10⁻³ | 3.9·10⁻² | 4.0·10⁻⁴ |
+| neighborhood r = 3 | 5.7% | 1.9·10⁻² | 2.0·10⁻³ | 2.6·10⁻² | 2.7·10⁻⁴ |
+| neighborhood r = 4 | 7.4% | 1.6·10⁻² | 1.6·10⁻³ | 2.0·10⁻² | 2.0·10⁻⁴ |
+| neighborhood r = 6 | 10.8% | 8.0·10⁻³ | 8.4·10⁻⁴ | 1.4·10⁻² | 1.4·10⁻⁴ |
+| neighborhood r = 8 | 14.2% | 3.1·10⁻³ | 3.3·10⁻⁴ | 9.9·10⁻³ | 1.0·10⁻⁴ |
 | unmasked | 100.0% | 5.2·10⁻⁷ | 5.4·10⁻⁸ | 4.8·10⁻⁷ | 5.0·10⁻⁹ |
 
 ### 64-spoke radial (160², 320² grid)
 
-![radial64 masks](img/neighbour_mask_radial64.png)
+![radial64 masks](img/neighbor_mask_radial64.png)
 
 | mask | grid kept | image ÷ out | image ÷ in | white noise ÷ out | white noise ÷ in |
 |---|---|---|---|---|---|
-| neighbourhood r = 1 | 50.7% | 2.6·10⁻³ | 2.1·10⁻⁴ | 7.9·10⁻² | 1.4·10⁻³ |
-| neighbourhood r = 2 | 73.2% | 5.3·10⁻⁴ | 4.3·10⁻⁵ | 3.2·10⁻² | 5.6·10⁻⁴ |
-| neighbourhood r = 3 | 80.2% | 1.4·10⁻⁴ | 1.1·10⁻⁵ | 1.0·10⁻² | 1.8·10⁻⁴ |
-| neighbourhood r = 4 | 81.4% | 6.9·10⁻⁵ | 5.6·10⁻⁶ | 7.4·10⁻³ | 1.3·10⁻⁴ |
-| neighbourhood r = 6 | 83.3% | 4.0·10⁻⁵ | 3.2·10⁻⁶ | 5.1·10⁻³ | 9.0·10⁻⁵ |
-| neighbourhood r = 8 | 85.0% | 3.2·10⁻⁵ | 2.6·10⁻⁶ | 4.2·10⁻³ | 7.5·10⁻⁵ |
+| neighborhood r = 1 | 50.7% | 2.6·10⁻³ | 2.1·10⁻⁴ | 7.9·10⁻² | 1.4·10⁻³ |
+| neighborhood r = 2 | 73.2% | 5.3·10⁻⁴ | 4.3·10⁻⁵ | 3.2·10⁻² | 5.6·10⁻⁴ |
+| neighborhood r = 3 | 80.2% | 1.4·10⁻⁴ | 1.1·10⁻⁵ | 1.0·10⁻² | 1.8·10⁻⁴ |
+| neighborhood r = 4 | 81.4% | 6.9·10⁻⁵ | 5.6·10⁻⁶ | 7.4·10⁻³ | 1.3·10⁻⁴ |
+| neighborhood r = 6 | 83.3% | 4.0·10⁻⁵ | 3.2·10⁻⁶ | 5.1·10⁻³ | 9.0·10⁻⁵ |
+| neighborhood r = 8 | 85.0% | 3.2·10⁻⁵ | 2.6·10⁻⁶ | 4.2·10⁻³ | 7.5·10⁻⁵ |
 | unmasked | 100.0% | 1.0·10⁻⁶ | 8.4·10⁻⁸ | 1.5·10⁻⁶ | 2.6·10⁻⁸ |
 
 ### 280-spoke radial (320², 640² grid)
 
-![radial280 masks](img/neighbour_mask_radial280.png)
+![radial280 masks](img/neighbor_mask_radial280.png)
 
 | mask | grid kept | image ÷ out | image ÷ in | white noise ÷ out | white noise ÷ in |
 |---|---|---|---|---|---|
-| neighbourhood r = 1 | 77.1% | 2.6·10⁻⁵ | 5.6·10⁻⁶ | 4.2·10⁻² | 3.2·10⁻⁴ |
-| neighbourhood r = 2 | 79.3% | 3.3·10⁻⁶ | 7.0·10⁻⁷ | 7.7·10⁻³ | 5.9·10⁻⁵ |
-| neighbourhood r = 3 | 79.8% | 2.3·10⁻⁶ | 4.9·10⁻⁷ | 5.6·10⁻³ | 4.3·10⁻⁵ |
-| neighbourhood r = 4 | 80.3% | 2.0·10⁻⁶ | 4.3·10⁻⁷ | 4.5·10⁻³ | 3.5·10⁻⁵ |
-| neighbourhood r = 6 | 81.4% | 1.6·10⁻⁶ | 3.5·10⁻⁷ | 3.4·10⁻³ | 2.6·10⁻⁵ |
-| neighbourhood r = 8 | 82.3% | 1.5·10⁻⁶ | 3.2·10⁻⁷ | 2.8·10⁻³ | 2.2·10⁻⁵ |
+| neighborhood r = 1 | 77.1% | 2.6·10⁻⁵ | 5.6·10⁻⁶ | 4.2·10⁻² | 3.2·10⁻⁴ |
+| neighborhood r = 2 | 79.3% | 3.3·10⁻⁶ | 7.0·10⁻⁷ | 7.7·10⁻³ | 5.9·10⁻⁵ |
+| neighborhood r = 3 | 79.8% | 2.3·10⁻⁶ | 4.9·10⁻⁷ | 5.6·10⁻³ | 4.3·10⁻⁵ |
+| neighborhood r = 4 | 80.3% | 2.0·10⁻⁶ | 4.3·10⁻⁷ | 4.5·10⁻³ | 3.5·10⁻⁵ |
+| neighborhood r = 6 | 81.4% | 1.6·10⁻⁶ | 3.5·10⁻⁷ | 3.4·10⁻³ | 2.6·10⁻⁵ |
+| neighborhood r = 8 | 82.3% | 1.5·10⁻⁶ | 3.2·10⁻⁷ | 2.8·10⁻³ | 2.2·10⁻⁵ |
 | unmasked | 100.0% | 1.2·10⁻⁶ | 2.5·10⁻⁷ | 1.5·10⁻⁶ | 1.2·10⁻⁸ |
 
 ### 15680-spoke kooshball (160³, 320³ grid)
 
-![kooshball masks](img/neighbour_mask_kooshball.png)
+![kooshball masks](img/neighbor_mask_kooshball.png)
 
 | mask | grid kept | image ÷ out | image ÷ in | white noise ÷ out | white noise ÷ in |
 |---|---|---|---|---|---|
-| neighbourhood r = 1 | 44.3% | 2.0·10⁻⁵ | 4.4·10⁻⁶ | 1.5·10⁻² | 1.1·10⁻⁵ |
-| neighbourhood r = 2 | 53.9% | 4.3·10⁻⁶ | 9.5·10⁻⁷ | 1.5·10⁻³ | 1.1·10⁻⁶ |
-| neighbourhood r = 3 | 55.5% | 4.1·10⁻⁶ | 9.1·10⁻⁷ | 1.1·10⁻³ | 8.1·10⁻⁷ |
-| neighbourhood r = 4 | 56.9% | 4.1·10⁻⁶ | 8.9·10⁻⁷ | 8.8·10⁻⁴ | 6.6·10⁻⁷ |
-| neighbourhood r = 6 | 59.9% | 4.0·10⁻⁶ | 8.8·10⁻⁷ | 6.7·10⁻⁴ | 5.0·10⁻⁷ |
-| neighbourhood r = 8 | 62.8% | 4.0·10⁻⁶ | 8.7·10⁻⁷ | 5.4·10⁻⁴ | 4.1·10⁻⁷ |
+| neighborhood r = 1 | 44.3% | 2.0·10⁻⁵ | 4.4·10⁻⁶ | 1.5·10⁻² | 1.1·10⁻⁵ |
+| neighborhood r = 2 | 53.9% | 4.3·10⁻⁶ | 9.5·10⁻⁷ | 1.5·10⁻³ | 1.1·10⁻⁶ |
+| neighborhood r = 3 | 55.5% | 4.1·10⁻⁶ | 9.1·10⁻⁷ | 1.1·10⁻³ | 8.1·10⁻⁷ |
+| neighborhood r = 4 | 56.9% | 4.1·10⁻⁶ | 8.9·10⁻⁷ | 8.8·10⁻⁴ | 6.6·10⁻⁷ |
+| neighborhood r = 6 | 59.9% | 4.0·10⁻⁶ | 8.8·10⁻⁷ | 6.7·10⁻⁴ | 5.0·10⁻⁷ |
+| neighborhood r = 8 | 62.8% | 4.0·10⁻⁶ | 8.7·10⁻⁷ | 5.4·10⁻⁴ | 4.1·10⁻⁷ |
 | unmasked | 100.0% | did not fit in 24 GB | | | |
