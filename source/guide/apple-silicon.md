@@ -76,15 +76,31 @@ about 1e-6 to 3e-5 on large 3D grids, depending on the input.
 
 ## Performance
 
-The block-diagonal stage is bound by reading `phi2_toep`. As on CUDA, two choices keep those
-reads to a minimum:
+The block-diagonal stage is bound by reading `phi2_toep`. As on CUDA, the kernels read each
+stored element once and use it for several coils:
 
-* kernels specialized on L (for L ≤ 32; generic kernels for larger L);
-* coil groups (default 4, `MR_AHA_METAL_COIL_GROUP`), processed two coils at a time from
-  registers, so each read of `phi2_toep` serves several coils.
+* **L ≤ 32: kernels specialized on L.** Each thread holds its vectors in registers and processes
+  two coils at a time.
+* **L > 32: tiled kernels**, ported from CUDA's `mr_kernels_bdt.cu`. A threadgroup takes a tile
+  of P grid locations, stages the inputs of a batch of NC coils (up to 4) in threadgroup memory,
+  and walks the stored triangle in panels that are loaded once for the whole batch. The geometry
+  is chosen to fit Apple's 32 KB of threadgroup memory: at L = 72, NC = 4 and P = 8.
+* **Coil groups** (default 4, `MR_AHA_METAL_COIL_GROUP`) for both kernel families, so each read
+  of `phi2_toep` serves several coils.
 
-Together they cut the GPU time of one $A^H A$ by 16-23 % on the benchmark problems. Profile with
-`MR_AHA_METAL_PROFILE=1`.
+The generic threadgroup-memory kernels, which take one coil at a time, remain as a fallback
+(`MR_AHA_METAL_GENERIC_BD=1`, or when no tiled geometry fits).
+
+The masked tiled kernels work in place: they index the grid with a grid-to-mask map built once
+per call, so the operator needs no compact buffer and no scatter pass. Tiles with no location in
+the mask only write zeros.
+
+The specialized kernels and coil groups cut the GPU time of one $A^H A$ by 16-23 % on the
+benchmark problems. At L = 72 (`2d72`, masked), the tiled kernels cut the block-diagonal stage
+from 1094 ms to 94 ms of GPU time, and one $A^H A$ from 1.19 s to 182 ms. Toeplitz is then 5.8×
+faster than NUFFT, where before it was slower (see [Single GPU](../benchmarks/single-gpu.md)).
+Profile with `MR_AHA_METAL_PROFILE=1`; with `verbose`, the plan prints which kernel family it
+uses.
 
 ## Size limit
 
@@ -107,6 +123,9 @@ These are for testing and diagnostics.
 |---|---|
 | `MR_AHA_METAL_COIL_GROUP=<n>` | sets the coil group size |
 | `MR_AHA_METAL_GENERIC_BD=1` | uses the generic block-diagonal kernels for every L |
+| `MR_AHA_METAL_TILED_BD=1` | uses the tiled block-diagonal kernels for every L, also L ≤ 32 |
+| `MR_AHA_METAL_BDT_NC=<n>` | sets the coil batch of the tiled kernels (1, 2 or 4) |
+| `MR_AHA_METAL_BDT_P=<n>` | sets the tile width of the tiled kernels (4, 8, 16 or 32 locations) |
 | `MR_AHA_METAL_PROFILE=1` | prints the GPU time of each operator stage |
 | `MR_AHA_METAL_FROM_SOURCE=1` | compiles the embedded shader source even when a precompiled library is embedded |
 | `MR_AHA_METAL_FORCE_COPY=1` | copies caller arrays instead of wrapping them in place |
