@@ -1,23 +1,23 @@
 # Implementation notes
 
-This page summarises the design choices behind the operator. Each paragraph names one choice and
+This page summarizes the design choices behind the operator. Each paragraph names one choice and
 what it buys. [How the CUDA operator gets its speed](performance.md) explains the performance
 ones in depth.
 
 ## Numerics
 
-**No scaling in the hot loop.** The two cuFFTs of `AhA_Toeplitz` are unnormalised, so the
+**No scaling in the hot loop.** The two cuFFTs of `AhA_Toeplitz` are unnormalized, so the
 multiplier between them must carry a factor $1/\prod M$. `calc_toep` puts it into `phi2_toep`: it
-evaluates the type-1 NUFFT with sign $-1$ and then a *normalised* centred inverse FFT. The
+evaluates the type-1 NUFFT with sign $-1$ and then a *normalized* centered inverse FFT. The
 point-spread functions of the two signs are spatial reflections of one another,
 $p^{-}[d] = p^{+}[-d]$, so the result equals $\mathrm{DFT}(p^{+})/\prod M$, which is exactly the
 multiplier needed. The iteration itself never scales anything.
 
 **Centring by index remap.** Image-space and k-space arrays have their origin in the middle. The
-library realises this through the indices it reads and writes:
+library realizes this through the indices it reads and writes:
 
 - the pad and crop kernels write and read at $(x_d - \lfloor N_d/2 \rfloor) \bmod M_d$;
-- the block-diagonal kernel converts between natural and centred order on the fly.
+- the block-diagonal kernel converts between natural and centered order on the fly.
 
 This costs no extra pass over the data and is exact for even and odd matrix sizes. Pad and crop
 are an exact adjoint pair, so the composed operator is Hermitian whenever the multiplier is.
@@ -49,7 +49,7 @@ This stage is the per-location multiplication by the Hermitian $L \times L$ bloc
 memory bandwidth, because it reads `phi2_toep`, the largest array of the operator. Four choices
 keep those reads to a minimum:
 
-- **Kernels specialised on $L$** (for $L \le 30$). The rank vectors stay in registers, and the
+- **Kernels specialized on $L$** (for $L \le 30$). The rank vectors stay in registers, and the
   stored triangle is walked once, so each stored element is read once.
 - **Coil groups** (default 4). The padded grids of a group sit side by side, one batched cuFFT
   transforms them all, and one kernel pass reads `phi2_toep` once for the whole group. The group

@@ -4,7 +4,7 @@
 Fortran). Row-major callers (NumPy, CuPy) reverse the dimension order. The memory layout is
 identical, so nothing ever has to be permuted.
 
-**Centred arrays.** Image-space and k-space arrays have their origin in the *middle* of the array,
+**Centered arrays.** Image-space and k-space arrays have their origin in the *middle* of the array,
 at index `floor(dim/2)`. The library performs the required shifts internally by index remapping, so
 the convention is exact for even and odd matrix sizes alike.
 
@@ -44,7 +44,7 @@ The arrays:
 * **`phi2`** — the [Gram block](#gram-blocks) $\Phi_2$ of each readout: a full $L \times L$
   matrix per readout (and per kz encode for stack).
   * 2D and 3D: `[Ntrajs, L, L]`
-  * stack: `[Ntrajs, Nkz, L, L]`, kz in centred order
+  * stack: `[Ntrajs, Nkz, L, L]`, kz in centered order
 * **`traj`** — non-Cartesian k-space coordinates of every sample, the last dimension holding the
   (kx, ky[, kz]) components. Stack holds only the in-plane coordinates; kz is Cartesian.
   * 2D and stack: `[Ntrajs, Nkx, 2]`

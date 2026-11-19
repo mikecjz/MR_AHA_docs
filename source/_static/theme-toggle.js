@@ -1,5 +1,5 @@
 // Two-state light/dark toggle in place of Furo's three-state auto/light/dark.
-// A visit starts in the system's colour scheme. Clicking the toggle switches
+// A visit starts in the system's color scheme. Clicking the toggle switches
 // between light and dark, and the choice is kept while moving between pages in
 // this browser tab (sessionStorage), so a new visit follows the system again.
 //

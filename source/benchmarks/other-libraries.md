@@ -327,7 +327,7 @@ same on all three GPUs:
 | stack 64² × 16, $L = 4$, 4 coils | 1.2e-6 | 1.1e-2 | 4.6e-3 |
 | 3D 48³, $L = 4$, 4 coils | 1.4e-6 | 1.0e-2 | 3.4e-3 |
 
-The best-fit scalar is 0.99999 in every case, so both libraries compute the same unnormalised
+The best-fit scalar is 0.99999 in every case, so both libraries compute the same unnormalized
 operator with the same sign and Gram-block conventions. The remaining difference is the mask.
 MRISubspaceRecon.jl keeps the grid points within its Gaussian spreading kernel's reach of a
 sample; MR_AHA's default mask (`calc_mask`, `mask_radius = 2`) keeps a similar fraction chosen

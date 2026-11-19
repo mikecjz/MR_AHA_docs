@@ -67,7 +67,7 @@ every GPU, memory leaks, and a forced allocation failure on another GPU.
 python tests/check_bd_kernels.py
 ```
 
-Both backends use block-diagonal kernels specialised on `L`. For larger ranks the CUDA backend
+Both backends use block-diagonal kernels specialized on `L`. For larger ranks the CUDA backend
 uses tiled kernels (31 to 512) and the Metal backend falls back to generic kernels. This test
 applies the operator with the optimized and the generic kernels on random inputs for many ranks
 (up to 130 on CUDA), both triangulations, unmasked and masked, with several coil-group sizes,

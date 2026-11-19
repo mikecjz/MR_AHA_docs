@@ -79,7 +79,7 @@ about 1e-6 to 3e-5 on large 3D grids, depending on the input.
 The block-diagonal stage is bound by reading `phi2_toep`. As on CUDA, two choices keep those
 reads to a minimum:
 
-* kernels specialised on L (for L ≤ 32; generic kernels for larger L);
+* kernels specialized on L (for L ≤ 32; generic kernels for larger L);
 * coil groups (default 4, `MR_AHA_METAL_COIL_GROUP`), processed two coils at a time from
   registers, so each read of `phi2_toep` serves several coils.
 
@@ -116,4 +116,4 @@ These are for testing and diagnostics.
 
 No Xcode is needed at run time: the shaders are precompiled, or macOS compiles them itself. A
 downloaded, unsigned `.dylib` / `.mexmaca64` is quarantined by Gatekeeper. Clear the quarantine
-with `xattr -dr com.apple.quarantine <folder>`, or sign and notarise the binaries.
+with `xattr -dr com.apple.quarantine <folder>`, or sign and notarize the binaries.

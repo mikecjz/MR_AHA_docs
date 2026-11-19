@@ -60,7 +60,7 @@ The `.m` wrappers:
 Call `AhA_Toeplitz_mex` / `calc_toep_mex` directly only if you want to skip that.
 
 ```{note}
-MATLAB must have initialised its GPU before the first MEX call. Running `gpuDevice(1)`, or
+MATLAB must have initialized its GPU before the first MEX call. Running `gpuDevice(1)`, or
 creating any `gpuArray`, is enough. The wrappers do this implicitly by moving their inputs.
 ```
 

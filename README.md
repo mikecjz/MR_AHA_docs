@@ -1,7 +1,7 @@
 # MR_AHA_docs
 
 Sources of the documentation website of [MR_AHA](https://github.com/mikecjz/MR_AHA), the GPU
-library for the forward normal operator $A^H A$ of non-Cartesian MRI with low-rank modelling.
+library for the forward normal operator $A^H A$ of non-Cartesian MRI with low-rank modeling.
 
 **The site: <https://mikecjz.github.io/MR_AHA_docs/>**
 
