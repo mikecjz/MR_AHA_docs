@@ -79,14 +79,18 @@ about 1e-6 to 3e-5 on large 3D grids, depending on the input.
 The block-diagonal stage is bound by reading `phi2_toep`. As on CUDA, the kernels read each
 stored element once and use it for several coils:
 
-* **L ≤ 32: kernels specialized on L.** Each thread holds its vectors in registers and processes
+* **L ≤ 5: kernels specialized on L.** Each thread holds its vectors in registers and processes
   two coils at a time.
-* **L > 32: tiled kernels**, ported from CUDA's `mr_kernels_bdt.cu`. A threadgroup takes a tile
+* **L > 5: tiled kernels**, ported from CUDA's `mr_kernels_bdt.cu`. A threadgroup takes a tile
   of P grid locations, stages the inputs of a batch of NC coils (up to 4) in threadgroup memory,
   and walks the stored triangle in panels that are loaded once for the whole batch. The geometry
   is chosen to fit Apple's 32 KB of threadgroup memory: at L = 72, NC = 4 and P = 8.
 * **Coil groups** (default 4, `MR_AHA_METAL_COIL_GROUP`) for both kernel families, so each read
   of `phi2_toep` serves several coils.
+
+The limit of 5 (`MR_METAL_BD_MAX_L`) comes from a sweep of L = 1–32 on the M3 Ultra (whole
+$A^H A$, 2D radial, 384² with 8 coils and 256² with 16 coils, masked and unmasked). The tiled
+kernels are faster from L = 5 (masked) or 7–9 (unmasked), and about 2× faster at L = 30–32.
 
 The generic threadgroup-memory kernels, which take one coil at a time, remain as a fallback
 (`MR_AHA_METAL_GENERIC_BD=1`, or when no tiled geometry fits).
@@ -123,7 +127,7 @@ These are for testing and diagnostics.
 |---|---|
 | `MR_AHA_METAL_COIL_GROUP=<n>` | sets the coil group size |
 | `MR_AHA_METAL_GENERIC_BD=1` | uses the generic block-diagonal kernels for every L |
-| `MR_AHA_METAL_TILED_BD=1` | uses the tiled block-diagonal kernels for every L, also L ≤ 32 |
+| `MR_AHA_METAL_TILED_BD=1` | uses the tiled block-diagonal kernels for every L, also L ≤ 5 |
 | `MR_AHA_METAL_BDT_NC=<n>` | sets the coil batch of the tiled kernels (1, 2 or 4) |
 | `MR_AHA_METAL_BDT_P=<n>` | sets the tile width of the tiled kernels (4, 8, 16 or 32 locations) |
 | `MR_AHA_METAL_PROFILE=1` | prints the GPU time of each operator stage |

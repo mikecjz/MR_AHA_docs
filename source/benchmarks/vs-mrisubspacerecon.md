@@ -22,7 +22,7 @@ The same study against BART is on [MR_AHA vs BART](vs-bart.md).
   MR_AHA's stack operator is 2.7–2.8× faster. MRISubspaceRecon.jl also cannot run the standard
   stack problem at all (see [Limits of MRISubspaceRecon.jl](#limits-of-mrisubspacereconjl)).
 * **High rank.** At $L = 72$ MR_AHA is 2.3–4.2× faster, with its
-  [tiled kernels for ranks above 30](../background/performance.md#23-ranks-above-30-tiled-kernels).
+  [tiled kernels for ranks above 30](../background/performance.md#23-ranks-above-16-tiled-kernels).
   Before them, MRISubspaceRecon.jl was 2.2× faster than MR_AHA on the H100.
 * **MRISubspaceRecon.jl computes the same operator up to its kernel mask.** It agrees with an
   exact $A^H A$ to $2$–$5 \cdot 10^{-3}$, the error of the mask, which cannot be switched off.
@@ -136,9 +136,9 @@ In ms, set-up in s in parentheses.
 * On the stack it is 2.7–2.8× slower: it has no stack-of-stars operator (see
   [Limits of MRISubspaceRecon.jl](#limits-of-mrisubspacereconjl)).
 * `2d72` shows the largest gap on 2D and 3D problems: MR_AHA is 4.0×, 4.2× and 2.3× faster on
-  the TITAN RTX, the L40S and the H100. $L = 72$ is above the largest rank (30) for which
+  the TITAN RTX, the L40S and the H100. $L = 72$ is above the largest rank (16) for which
   MR_AHA keeps the rank vectors in registers; such ranks run its
-  [tiled kernels](../background/performance.md#23-ranks-above-30-tiled-kernels). Before those
+  [tiled kernels](../background/performance.md#23-ranks-above-16-tiled-kernels). Before those
   kernels MR_AHA's masked operator took 583, 288 and 165 ms, and MRISubspaceRecon.jl was 2.2×
   faster on the H100.
 * MRISubspaceRecon.jl's set-up is 1.3–17× slower, except on the small `2d` problem on the L40S

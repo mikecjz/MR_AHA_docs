@@ -49,18 +49,20 @@ This stage is the per-location multiplication by the Hermitian $L \times L$ bloc
 memory bandwidth, because it reads `phi2_toep`, the largest array of the operator. Four choices
 keep those reads to a minimum:
 
-- **Kernels specialized on $L$** (for $L \le 30$). The rank vectors stay in registers, and the
+- **Kernels specialized on $L$** (for $L \le 16$). The rank vectors stay in registers, and the
   stored triangle is walked once, so each stored element is read once.
 - **Coil groups** (default 4). The padded grids of a group sit side by side, one batched cuFFT
   transforms them all, and one kernel pass reads `phi2_toep` once for the whole group. The group
   shrinks, down to one coil, until its buffers fit `config.mem_fraction` of the free GPU memory.
 - **In-place masked kernel.** The masked variant multiplies in place on the padded grid, through
   a grid-to-mask index map.
-- **Tiled kernels** (for $30 < L \le 512$). The rank vectors no longer fit in registers, so a
+- **Tiled kernels** (for $16 < L \le 512$). A
   thread block stages them in shared memory for a tile of 16 grid locations and up to 4 coils.
   It copies the stored triangle from DRAM panel by panel, once for all of them. On `2d72`
   ($L = 72$) this is 3 to 9 times faster than the generic kernels
-  ([details](performance.md#23-ranks-above-30-tiled-kernels)).
+  ([details](performance.md#23-ranks-above-16-tiled-kernels)). From $L = 17$ they are also faster
+  than the specialized kernels on every GPU tested
+  ([why 16](performance.md#22-kernels-specialized-on--everything-in-registers)).
 
 The generic shared-memory kernels, one coil at a time, remain as the fallback for a mask of more
 than 2³¹ locations. All three kernel families agree to single-precision rounding
