@@ -14,8 +14,9 @@ The same study against BART is on [MR_AHA vs BART](vs-bart.md).
 * **MR_AHA is faster on every problem and GPU measured.** MRISubspaceRecon.jl is 1.2–4.2× slower
   per $A^H A$ than MR_AHA's masked operator on 2D and 3D problems, and its set-up is up to 17×
   slower.
-* **20 CG iterations** have not been measured with MRISubspaceRecon.jl yet (see
-  [20 CG iterations](#20-cg-iterations)).
+* **20 CG iterations** with MRISubspaceRecon.jl are 1.2–4.2× slower than with MR_AHA's masked
+  operator on 2D and 3D problems, and 2.7–2.8× slower on the stack. Both libraries spend almost all
+  their CG time in $A^H A$.
 * **Stack-of-stars is where the difference is largest.** MRISubspaceRecon.jl has no
   stack-of-stars operator and treats a stack as a 3D problem oversampled along $z$ as well.
   MR_AHA's stack operator is 2.7–2.8× faster. MRISubspaceRecon.jl also cannot run the standard
@@ -74,6 +75,14 @@ its set-up time but not to $A^H A$.
 "Masked" is MR_AHA's masked Toeplitz operator, the closest match: MRISubspaceRecon.jl always
 masks its kernel. Times are medians of 10 applications after 2 warm-up runs; set-up is the median
 of the warm creations (the first creation in Julia also compiles, about 1.7 s for `2d`).
+
+For CG, each library runs 20 plain CG iterations on $A^H A\,u = x$ from $u = 0$, without a
+stopping test, after one untimed iteration. Both use the same algorithm (`cg_time` of the
+benchmarks' `python/bench_aha.py`, which the [BART comparison](vs-bart.md#20-cg-iterations) also
+uses): one $A^H A$, two inner products and three vector updates per iteration. The CG runs used
+MR_AHA [`da3e148`](https://github.com/mikecjz/MR_AHA/tree/da3e148), whose CUDA code is the same as
+`c60db28`'s. On the L40S and the H100 both libraries ran in the same job; on the TITAN RTX the same
+commands ran by hand on one GPU.
 
 ## One $A^H A$
 
@@ -139,10 +148,58 @@ In ms, set-up in s in parentheses.
 
 ## 20 CG iterations
 
-Not measured yet. The MRISubspaceRecon.jl benchmark in
-[MR_AHA_benchmarks](https://github.com/mikecjz/MR_AHA_benchmarks) times one $A^H A$ only; a CG
-run with the same 20 iterations as on [MR_AHA vs BART](vs-bart.md#20-cg-iterations) has still to
-be added to it.
+In s, on the same problems as one $A^H A$.
+
+::::{tab-set}
+
+:::{tab-item} TITAN RTX
+:sync: titanrtx
+
+| Problem | MR_AHA masked | MR_AHA Toeplitz | MRISubspaceRecon.jl | MRISubspaceRecon.jl / MR_AHA masked | MR_AHA NUFFT |
+|---|---:|---:|---:|---:|---:|
+| `2d` | **0.050** | 0.051 | 0.065 | 1.3× | 0.43 |
+| `2d72` | **4.30** | 4.81 | 16.1 | 3.7× | 15.9 |
+| `stack` | **20.3** | 20.9 | fails (2-3-5 check) | – | 58.5 |
+| `stack` with 32 slices | **11.4** | 11.8 | 31.0 | 2.7× | 33.1 |
+| `3d` | **28.5** | out of memory | 34.1 | 1.2× | 175 |
+
+MR_AHA's unmasked `3d` operator (24.0 GB) did not fit on the 24 GB TITAN RTX next to the
+other arrays of the CG run; its masked one (15.1 GB) did.
+
+:::
+
+:::{tab-item} L40S
+:sync: l40s
+
+| Problem | MR_AHA masked | MR_AHA Toeplitz | MRISubspaceRecon.jl | MRISubspaceRecon.jl / MR_AHA masked | MR_AHA NUFFT |
+|---|---:|---:|---:|---:|---:|
+| `2d` | **0.014** | 0.014 | 0.018 | 1.3× | 0.27 |
+| `2d72` | **1.75** | 1.83 | 7.27 | 4.2× | 8.75 |
+| `stack` | **15.2** | 15.4 | fails (2-3-5 check) | – | 32.4 |
+| `stack` with 32 slices | **8.41** | 8.50 | 23.0 | 2.7× | 18.5 |
+| `3d` | **20.6** | 21.5 | 27.1 | 1.3× | 115 |
+
+:::
+
+:::{tab-item} H100
+:sync: h100
+
+| Problem | MR_AHA masked | MR_AHA Toeplitz | MRISubspaceRecon.jl | MRISubspaceRecon.jl / MR_AHA masked | MR_AHA NUFFT |
+|---|---:|---:|---:|---:|---:|
+| `2d` | **0.013** | 0.013 | 0.019 | 1.5× | 0.13 |
+| `2d72` | **0.67** | 0.73 | 1.54 | 2.3× | 3.96 |
+| `stack` | **3.48** | 3.63 | fails (2-3-5 check) | – | 16.0 |
+| `stack` with 32 slices | **1.97** | 2.06 | 5.47 | 2.8× | 9.23 |
+| `3d` | **4.72** | 5.13 | 6.44 | 1.4× | 40.4 |
+
+:::
+
+::::
+
+* Apart from the tiny `2d` problem, CG time is 20 $A^H A$ applications plus 1–3 % in both
+  libraries, so the ratios follow those of one $A^H A$.
+* MRISubspaceRecon.jl cannot run the standard `stack` problem at all (see
+  [Limits of MRISubspaceRecon.jl](#limits-of-mrisubspacereconjl)).
 
 ## Accuracy
 
@@ -190,7 +247,8 @@ The following describes MRISubspaceRecon.jl at commit
 
 The scripts are in the `julia/` folder of
 [MR_AHA_benchmarks](https://github.com/mikecjz/MR_AHA_benchmarks), with a README that describes
-the set-up, every option and the results.
+the set-up, every option and the results. The CG option `--cg` comes from
+[MR_AHA_benchmarks#2](https://github.com/mikecjz/MR_AHA_benchmarks/pull/2).
 
 ```bash
 git clone --recurse-submodules https://github.com/mikecjz/MR_AHA_benchmarks.git
@@ -198,4 +256,5 @@ cd MR_AHA_benchmarks/julia
 julia --project=. -e 'using Pkg; Pkg.instantiate()'
 python save_problem.py 2d data/2d.mat
 julia -t 8 --project=. bench_aha.jl --data data/2d.mat
+julia -t 8 --project=. bench_aha.jl --data data/2d.mat --cg 20   # adds 20 CG iterations
 ```
