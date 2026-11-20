@@ -1,16 +1,17 @@
 # Benchmarks
 
-One $A^H A$ of MR_AHA's Toeplitz operator (the faster of masked and unmasked), against the NUFFT
-operator with the same interface:
+One $A^H A$ of MR_AHA's Toeplitz operator (the faster of masked and unmasked), against the
+Python NUFFT reference `aha_nufft_plan` on the same GPU (cufinufft's Python interface on the
+NVIDIA GPUs, mlx-nufft on Apple silicon):
 
 | problem | TITAN RTX | RTX 5090 | L40S | H100 | Apple M3 Ultra |
 |---|---:|---:|---:|---:|---:|
-| 2D radial 160², $L = 6$, 16 coils | 2.19 ms (8.9×) | 0.32 ms (16×) | 0.43 ms (30×) | 0.52 ms (13×) | 1.68 ms (47×) |
-| 2D radial 320², $L = 72$, 12 coils | 199 ms (3.6×) | 39 ms (4.0×) | 86 ms (5.1×) | 33 ms (6.1×) | 182 ms (5.8×) |
-| stack-of-stars 320² × 56, $L = 12$, 12 coils | 0.98 s (2.6×) | 0.31 s (2.1×) | 0.74 s (2.2×) | 0.17 s (4.7×) | 0.89 s (7.0×) |
-| 3D kooshball 160³, $L = 12$, 12 coils | 1.39 s (5.6×) | 0.43 s (5.0×) | 1.02 s (5.6×) | 0.23 s (8.8×) | 1.10 s (18×) |
+| 2D radial 160², $L = 6$, 16 coils | 2.11 ms (10×) | 0.32 ms (43×) | 0.43 ms (48×) | 0.52 ms (36×) | 1.75 ms (45×) |
+| 2D radial 320², $L = 72$, 12 coils | 198 ms (3.5×) | 39 ms (6.0×) | 86 ms (3.5×) | 33 ms (12×) | 182 ms (5.8×) |
+| stack-of-stars 320² × 56, $L = 12$, 12 coils | 0.98 s (4.1×) | 0.31 s (4.4×) | 0.74 s (2.5×) | 0.17 s (13×) | 0.89 s (7.0×) |
+| 3D kooshball 160³, $L = 12$, 12 coils | 1.38 s (7.8×) | 0.43 s (3.3×) | 1.02 s (3.8×) | 0.23 s (13×) | 1.10 s (18×) |
 
-The speed-up over the NUFFT operator on the same GPU is in parentheses. On four H100s the stack and
+The speed-up over `aha_nufft_plan` on the same GPU is in parentheses. On four H100s the stack and
 3D operators take 51 ms and 64 ms.
 
 | Section | What it measures |
@@ -54,8 +55,8 @@ bench_aha('problem', 'stack', 'gpus', [1 2 4])
 | Method | What runs | GPUs |
 |---|---|---|
 | `toeplitz` | the library's Toeplitz operator | 1 or several |
-| `nufft_c` | the library's NUFFT operator (cufinufft's C API inside the library) | 1 or several |
-| `nufft_native` | the same NUFFT operator written with cufinufft's Python or MATLAB interface | 1 |
+| `nufft_c` | the library's own NUFFT operator, `create_op(..., method='nufft')` (cufinufft's C API inside the library). Not used in the [Single GPU](single-gpu.md) tables | 1 or several |
+| `nufft_native` | the NUFFT reference `aha_nufft_plan`, written with cufinufft's Python or MATLAB interface (mlx-nufft on Apple silicon). The NUFFT baseline of the [Single GPU](single-gpu.md) tables | 1 |
 
 The problems are synthetic presets with adjustable sizes, or your own data file. The
 repository's README lists every option.

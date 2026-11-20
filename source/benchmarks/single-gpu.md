@@ -1,29 +1,32 @@
 # Single GPU
 
-One GPU, the Toeplitz operator of MR_AHA (`mr_aha.create_op`) against the NUFFT operator with
-the same interface, which applies a type-2 and a type-1 NUFFT in every call (`aha_nufft_plan`,
-or `create_op(..., method='nufft')`). The NUFFT numbers are those of the NUFFT library's default
+One GPU, the Toeplitz operator of MR_AHA (`mr_aha.create_op`) against the Python NUFFT
+reference `mr_aha.aha_nufft_plan` (see [Operations](../guide/operations.md)), which applies a
+type-2 and a type-1 NUFFT in every call. The NUFFT baseline is `aha_nufft_plan` on every
+backend: on the NVIDIA GPUs it runs on CuPy with cufinufft's Python interface, on Apple silicon
+on MLX with mlx-nufft. It does not use the library's own NUFFT operator
+(`create_op(..., method='nufft')`). The NUFFT numbers are those of the NUFFT library's default
 settings.
 
 ## Summary
 
-* **On the NVIDIA GPUs, Toeplitz is faster than NUFFT on every problem.** One $A^H A$ is 9–30×
-  faster for the small 2D problem, 3.6–6.1× at rank 72, 2.1–4.7× for stack-of-stars and
-  5.0–8.8× for the 3D kooshball. 20 CG iterations gain about as much, except on the small 2D
-  problem (8–19×).
+* **On the NVIDIA GPUs, Toeplitz is faster than NUFFT on every problem.** One $A^H A$ is 10–48×
+  faster for the small 2D problem, 3.5–11.5× at rank 72, 2.5–12.5× for stack-of-stars and
+  3.3–13.4× for the 3D kooshball; on the larger problems the gain is largest on the H100
+  (11.5–13.4×). 20 CG iterations gain about as much, except on the small 2D problem (9.5–36×).
 * **The NUFFT operator is ready at once; the Toeplitz operator first computes its kernel**, in
-  1.6–4.7 s for the large problems on an H100 and up to 18.6 s (masked 3D on the TITAN RTX).
+  1.5–4.7 s for the large problems on an H100 and up to 18.9 s (masked 3D on the TITAN RTX).
   The kernel pays for itself within 3 applications of $A^H A$ for the stack-of-stars and 3D
-  problems and within 14 for the 2D ones, so set-up plus 20 CG iterations still finishes
+  problems and within 10 for the 2D ones, so set-up plus 20 CG iterations still finishes
   sooner with Toeplitz.
 * **The fastest GPU is the H100**: 0.52 ms (`2d`), 33 ms (`2d72`), 0.17 s (`stack`) and 0.23 s
-  (`3d`) per $A^H A$, and 4.7 s for 20 CG iterations in 3D.
+  (`3d`) per $A^H A$, and 5.1 s for 20 CG iterations in 3D.
 * **The RTX 5090 is the fastest on the small `2d` problem** (0.32 ms) and close to the H100 at
   rank 72 (39 ms against 33 ms), but at about half the H100's memory bandwidth it takes about
   twice as long for the stack-of-stars (0.31 s) and 3D (0.43 s) problems, between the H100 and
   the L40S.
 * **On the Apple M3 Ultra, Toeplitz is also faster than NUFFT (mlx-nufft) on every problem**:
-  7–47× per $A^H A$, and 5.8× on the high-rank `2d72` problem (182 ms against 1.06 s), where the
+  7–45× per $A^H A$, and 5.8× on the high-rank `2d72` problem (182 ms against 1.05 s), where the
   tiled block-diagonal kernels for $L > 32$ run it at about the speed of a TITAN RTX. The stack
   and 3D problems run at about the speed of an L40S (0.89 s for the stack, 1.10 s in 3D).
 * **Both operators compute the same thing**: they agree to 1–4·10⁻⁶ per application, and the
@@ -57,34 +60,35 @@ Toeplitz operator. The fastest time of each row is in bold.
 :::{tab-item} TITAN RTX
 :sync: titanrtx
 
-NVIDIA TITAN RTX, 24 GB (Turing, sm_75), CUDA 12.6, cufinufft 2.5.1.
+NVIDIA TITAN RTX, 24 GB (Turing, sm_75), CUDA 12.6, cufinufft 2.5.1. NUFFT: `aha_nufft_plan`
+with CuPy 14.2 and cufinufft 2.5.1 (Python).
 
 **Operator set-up**
 
 | problem | NUFFT | Toeplitz | Toeplitz masked |
 |---|---:|---:|---:|
-| `2d` | **1.71 ms** | 14.8 ms | 14.0 ms |
-| `2d72` | **3.27 ms** | 2.49 s | 2.16 s |
-| `stack` | **18.6 ms** | 3.12 s | 3.10 s |
-| `3d` | **5.26 ms** | does not fit | 18.60 s |
+| `2d` | **2.77 ms** | 14.3 ms | 13.3 ms |
+| `2d72` | **3.03 ms** | 2.47 s | 2.14 s |
+| `stack` | **4.50 ms** | 3.03 s | 3.07 s |
+| `3d` | **17.2 ms** | does not fit | 18.91 s |
 
 **One $A^H A$**
 
 | problem | NUFFT | Toeplitz | Toeplitz masked | Toeplitz speed-up |
 |---|---:|---:|---:|---:|
-| `2d` | 19.4 ms | 2.23 ms | **2.19 ms** | 8.9× |
-| `2d72` | 706 ms | 225 ms | **199 ms** | 3.6× |
-| `stack` | 2.58 s | 1.01 s | **0.98 s** | 2.6× |
-| `3d` | 7.73 s | does not fit | **1.39 s** | 5.6× |
+| `2d` | 21.8 ms | 2.22 ms | **2.11 ms** | 10.3× |
+| `2d72` | 699 ms | 223 ms | **198 ms** | 3.5× |
+| `stack` | 3.98 s | 1.01 s | **0.98 s** | 4.1× |
+| `3d` | 10.72 s | does not fit | **1.38 s** | 7.8× |
 
 **20 CG iterations**
 
 | problem | NUFFT | Toeplitz | Toeplitz masked | Toeplitz speed-up |
 |---|---:|---:|---:|---:|
-| `2d` | 395 ms | 49.6 ms | **47.1 ms** | 8.4× |
-| `2d72` | 14.24 s | 4.89 s | **4.02 s** | 3.5× |
-| `stack` | 52.59 s | 20.54 s | **19.92 s** | 2.6× |
-| `3d` | 156.6 s | does not fit | **28.00 s** | 5.6× |
+| `2d` | 443 ms | 49.2 ms | **46.8 ms** | 9.5× |
+| `2d72` | 14.05 s | 4.51 s | **4.01 s** | 3.5× |
+| `stack` | 79.87 s | 20.54 s | **19.90 s** | 4.0× |
+| `3d` | 214.3 s | does not fit | **27.89 s** | 7.7× |
 
 The unmasked 3D kernel (20.5 GB) does not fit in 24 GB together with the operator's buffers; the
 masked one does.
@@ -95,72 +99,73 @@ masked one does.
 :sync: rtx5090
 
 NVIDIA GeForce RTX 5090, 32 GB (Blackwell, sm_120), driver 595.99 (CUDA 13.2), CUDA toolkit
-12.9, library built for `sm_120` only, cufinufft 2.6.0 (bundled with MR_AHA). The GPU also
+12.9, library built for `sm_120` only, cufinufft 2.6.0 (bundled with MR_AHA) for the Toeplitz
+kernel. NUFFT: `aha_nufft_plan` with CuPy 14.2 and cufinufft 2.5.1 (Python). The GPU also
 drives the workstation's display.
 
 **Operator set-up**
 
 | problem | NUFFT | Toeplitz | Toeplitz masked |
 |---|---:|---:|---:|
-| `2d` | **0.86 ms** | 4.17 ms | 4.18 ms |
-| `2d72` | **1.23 ms** | 0.91 s | 0.95 s |
-| `stack` | **1.24 ms** | 1.12 s | 1.04 s |
-| `3d` | **1.77 ms** | 2.39 s | 2.49 s |
+| `2d` | **2.19 ms** | 3.97 ms | 3.61 ms |
+| `2d72` | **2.57 ms** | 0.91 s | 0.96 s |
+| `stack` | **2.82 ms** | 0.99 s | 1.18 s |
+| `3d` | **5.50 ms** | 2.38 s | 2.49 s |
 
 **One $A^H A$**
 
 | problem | NUFFT | Toeplitz | Toeplitz masked | Toeplitz speed-up |
 |---|---:|---:|---:|---:|
-| `2d` | 5.08 ms | **0.315 ms** | 0.324 ms | 16.1× |
-| `2d72` | 157 ms | 42.6 ms | **39.1 ms** | 4.0× |
-| `stack` | 661 ms | 323 ms | **312 ms** | 2.1× |
-| `3d` | 2.14 s | 0.54 s | **0.43 s** | 5.0× |
+| `2d` | 13.7 ms | **0.316 ms** | 0.325 ms | 43.3× |
+| `2d72` | 234 ms | 42.7 ms | **39.1 ms** | 6.0× |
+| `stack` | 1.38 s | 323 ms | **313 ms** | 4.4× |
+| `3d` | 1.44 s | 0.54 s | **0.43 s** | 3.3× |
 
 **20 CG iterations**
 
 | problem | NUFFT | Toeplitz | Toeplitz masked | Toeplitz speed-up |
 |---|---:|---:|---:|---:|
-| `2d` | 103 ms | **7.61 ms** | 7.80 ms | 13.5× |
-| `2d72` | 3.14 s | 0.86 s | **0.79 s** | 4.0× |
-| `stack` | 13.34 s | 6.59 s | **6.37 s** | 2.1× |
-| `3d` | 42.88 s | 10.95 s | **8.69 s** | 4.9× |
+| `2d` | 271 ms | **7.57 ms** | 7.79 ms | 35.8× |
+| `2d72` | 4.69 s | 0.86 s | **0.79 s** | 5.9× |
+| `stack` | 27.58 s | 6.59 s | **6.38 s** | 4.3× |
+| `3d` | 28.85 s | 10.95 s | **8.68 s** | 3.3× |
 
-The unmasked 3D operator fits in 32 GB (24.0 GB in use), unlike on the 24 GB TITAN RTX. A
-repeated run gave the same $A^H A$ times to within 1 %.
+The unmasked 3D operator fits in 32 GB (23.9 GB in use), unlike on the 24 GB TITAN RTX.
 
 :::
 
 :::{tab-item} L40S
 :sync: l40s
 
-NVIDIA L40S, 48 GB (Ada, sm_89), CUDA 12.9, cufinufft 2.5.1.
+NVIDIA L40S, 48 GB (Ada, sm_89), CUDA 12.9, cufinufft 2.5.1. NUFFT: `aha_nufft_plan` with
+CuPy 14.2 and cufinufft 2.5.1 (Python).
 
 **Operator set-up**
 
 | problem | NUFFT | Toeplitz | Toeplitz masked |
 |---|---:|---:|---:|
-| `2d` | **131 ms** | 218 ms | 213 ms |
-| `2d72` | **141 ms** | 2.18 s | 2.16 s |
-| `stack` | **174 ms** | 2.84 s | 2.43 s |
-| `3d` | **216 ms** | 8.45 s | 8.26 s |
+| `2d` | **130 ms** | 211 ms | 212 ms |
+| `2d72` | **138 ms** | 2.19 s | 2.21 s |
+| `stack` | **138 ms** | 2.87 s | 2.48 s |
+| `3d` | **216 ms** | 8.54 s | 7.34 s |
 
 **One $A^H A$**
 
 | problem | NUFFT | Toeplitz | Toeplitz masked | Toeplitz speed-up |
 |---|---:|---:|---:|---:|
-| `2d` | 13.1 ms | 0.44 ms | **0.43 ms** | 30.2× |
-| `2d72` | 436 ms | 90.2 ms | **85.8 ms** | 5.1× |
-| `stack` | 1.62 s | 0.75 s | **0.74 s** | 2.2× |
-| `3d` | 5.73 s | 1.06 s | **1.02 s** | 5.6× |
+| `2d` | 20.7 ms | 0.435 ms | **0.431 ms** | 48.0× |
+| `2d72` | 304 ms | 90.1 ms | **85.9 ms** | 3.5× |
+| `stack` | 1.90 s | 0.75 s | **0.74 s** | 2.5× |
+| `3d` | 3.87 s | 1.06 s | **1.02 s** | 3.8× |
 
 **20 CG iterations**
 
 | problem | NUFFT | Toeplitz | Toeplitz masked | Toeplitz speed-up |
 |---|---:|---:|---:|---:|
-| `2d` | 267 ms | **13.9 ms** | 14.2 ms | 19.2× |
-| `2d72` | 8.75 s | 1.83 s | **1.74 s** | 5.0× |
-| `stack` | 32.86 s | 15.35 s | **15.19 s** | 2.2× |
-| `3d` | 115.9 s | 21.48 s | **20.52 s** | 5.6× |
+| `2d` | 417 ms | 13.51 ms | **13.46 ms** | 31.0× |
+| `2d72` | 6.11 s | 1.83 s | **1.74 s** | 3.5× |
+| `stack` | 38.30 s | 15.45 s | **15.16 s** | 2.5× |
+| `3d` | 77.57 s | 21.44 s | **20.54 s** | 3.8× |
 
 On this cluster every NUFFT plan creation costs 0.12–0.2 s, which is most of the NUFFT set-up
 and of the small `2d` Toeplitz set-up.
@@ -170,34 +175,35 @@ and of the small `2d` Toeplitz set-up.
 :::{tab-item} H100
 :sync: h100
 
-NVIDIA H100 80GB (SXM, sm_90), CUDA 12.9, cufinufft 2.5.1.
+NVIDIA H100 80GB (SXM, sm_90), CUDA 12.9, cufinufft 2.5.1. NUFFT: `aha_nufft_plan` with
+CuPy 14.2 and cufinufft 2.5.1 (Python).
 
 **Operator set-up**
 
 | problem | NUFFT | Toeplitz | Toeplitz masked |
 |---|---:|---:|---:|
-| `2d` | **120 ms** | 190 ms | 189 ms |
-| `2d72` | **128 ms** | 2.25 s | 2.35 s |
-| `stack` | **156 ms** | 1.64 s | 1.66 s |
-| `3d` | **191 ms** | 4.09 s | 4.65 s |
+| `2d` | **126 ms** | 191 ms | 195 ms |
+| `2d72` | **128 ms** | 2.25 s | 2.17 s |
+| `stack` | **128 ms** | 1.49 s | 1.63 s |
+| `3d` | **195 ms** | 4.07 s | 4.73 s |
 
 **One $A^H A$**
 
 | problem | NUFFT | Toeplitz | Toeplitz masked | Toeplitz speed-up |
 |---|---:|---:|---:|---:|
-| `2d` | 6.61 ms | **0.52 ms** | 0.54 ms | 12.6× |
-| `2d72` | 199 ms | 36.1 ms | **32.7 ms** | 6.1× |
-| `stack` | 800 ms | 178 ms | **170 ms** | 4.7× |
-| `3d` | 2.04 s | 0.25 s | **0.23 s** | 8.8× |
+| `2d` | 18.7 ms | **0.524 ms** | 0.533 ms | 35.7× |
+| `2d72` | 378 ms | 36.2 ms | **32.9 ms** | 11.5× |
+| `stack` | 2.14 s | 178 ms | **171 ms** | 12.5× |
+| `3d` | 3.14 s | 0.25 s | **0.23 s** | 13.4× |
 
 **20 CG iterations**
 
 | problem | NUFFT | Toeplitz | Toeplitz masked | Toeplitz speed-up |
 |---|---:|---:|---:|---:|
-| `2d` | 135 ms | **13.4 ms** | 13.6 ms | 10.1× |
-| `2d72` | 3.99 s | 0.73 s | **0.66 s** | 6.0× |
-| `stack` | 16.06 s | 3.63 s | **3.48 s** | 4.6× |
-| `3d` | 40.95 s | 5.09 s | **4.68 s** | 8.7× |
+| `2d` | 383 ms | **13.1 ms** | 13.3 ms | 29.2× |
+| `2d72` | 7.57 s | 0.73 s | **0.67 s** | 11.3× |
+| `stack` | 42.81 s | 3.63 s | **3.48 s** | 12.3× |
+| `3d` | 62.81 s | **5.13 s** | 7.13 s | 12.2× |
 
 On this cluster every NUFFT plan creation costs 0.12–0.2 s, which is most of the NUFFT set-up
 and of the small `2d` Toeplitz set-up.
@@ -207,35 +213,35 @@ and of the small `2d` Toeplitz set-up.
 :::{tab-item} Apple M3 Ultra
 :sync: m3ultra
 
-Apple M3 Ultra, 512 GB unified memory, Metal backend. The NUFFT operator is MLX with
-mlx-nufft; `calc_toep` uses mlx-nufft and finishes in the library.
+Apple M3 Ultra, 512 GB unified memory, Metal backend. NUFFT: `aha_nufft_plan` on MLX with
+mlx-nufft 0.3.3; `calc_toep` uses mlx-nufft and finishes in the library.
 
 **Operator set-up**
 
 | problem | NUFFT | Toeplitz | Toeplitz masked |
 |---|---:|---:|---:|
-| `2d` | **1.90 ms** | 11.1 ms | 9.69 ms |
-| `2d72` | **2.89 ms** | 3.99 s | 3.93 s |
-| `stack` | **2.49 ms** | 3.76 s | 3.79 s |
-| `3d` | **26.0 ms** | 14.38 s | 14.04 s |
+| `2d` | **1.87 ms** | 10.6 ms | 10.0 ms |
+| `2d72` | **2.82 ms** | 3.94 s | 3.94 s |
+| `stack` | **2.48 ms** | 3.74 s | 3.62 s |
+| `3d` | **24.8 ms** | 14.32 s | 14.13 s |
 
 **One $A^H A$**
 
 | problem | NUFFT | Toeplitz | Toeplitz masked | Toeplitz speed-up |
 |---|---:|---:|---:|---:|
-| `2d` | 78.7 ms | **1.68 ms** | 1.94 ms | 46.8× |
-| `2d72` | 1.06 s | 214 ms | **182 ms** | 5.8× |
-| `stack` | 6.29 s | 0.92 s | **0.89 s** | 7.0× |
-| `3d` | 19.85 s | 1.18 s | **1.10 s** | 18.0× |
+| `2d` | 79.7 ms | **1.75 ms** | 2.03 ms | 45.5× |
+| `2d72` | 1.05 s | 214 ms | **182 ms** | 5.8× |
+| `stack` | 6.21 s | 0.92 s | **0.89 s** | 7.0× |
+| `3d` | 19.90 s | 1.18 s | **1.10 s** | 18.1× |
 
 **20 CG iterations**
 
 | problem | NUFFT | Toeplitz | Toeplitz masked | Toeplitz speed-up |
 |---|---:|---:|---:|---:|
-| `2d` | 1.57 s | **0.038 s** | 0.043 s | 41.0× |
-| `2d72` | 21.45 s | 5.04 s | **4.00 s** | 5.4× |
-| `stack` | 126.7 s | **18.88 s** | 20.01 s | 6.7× |
-| `3d` | 398.3 s | 25.60 s | **23.82 s** | 16.7× |
+| `2d` | 1.58 s | **0.040 s** | 0.045 s | 39.4× |
+| `2d72` | 21.19 s | 5.03 s | **3.94 s** | 5.4× |
+| `stack` | 127.3 s | **18.82 s** | 20.04 s | 6.8× |
+| `3d` | 400.5 s | 25.56 s | **23.83 s** | 16.8× |
 
 The `2d72` Toeplitz rows of $A^H A$ and CG use the tiled block-diagonal kernels for $L > 32$
 (see [Apple silicon](../guide/apple-silicon.md#performance)). Before them, the masked operator
@@ -269,28 +275,29 @@ their 20-iteration CG solutions, is the same on every GPU to the digits shown:
   keeps 4 % of the grid at an operator error of 3·10⁻², radius 8 keeps 14 % at 3·10⁻³; see
   [Neighborhood mask](neighbor-mask.md).
 
-The runtime measurements give the same operator differences on the NVIDIA GPUs: 0.9–1.1·10⁻⁶ in
-2D and stack-of-stars and 2.5·10⁻⁶ in 3D (1.1–1.6·10⁻⁶ and 1.9·10⁻⁵ on the M3 Ultra).
+The previous runtime measurements, which used the library's NUFFT operator on the NVIDIA GPUs,
+gave the same operator differences: 0.9–1.1·10⁻⁶ in 2D and stack-of-stars and
+2.5·10⁻⁶ in 3D on the NVIDIA GPUs, and 1.1–1.6·10⁻⁶ and 1.9·10⁻⁵ on the M3 Ultra.
 
 ## Sources
 
 The runtime tables were measured with `bench_aha.py` of
-[MR_AHA_benchmarks](https://github.com/mikecjz/MR_AHA_benchmarks) and MR_AHA
-[`dc61256`](https://github.com/mikecjz/MR_AHA/tree/dc61256), on the synthetic presets:
+[MR_AHA_benchmarks](https://github.com/mikecjz/MR_AHA_benchmarks)
+[`762a4c0`](https://github.com/mikecjz/MR_AHA_benchmarks/tree/762a4c0) and MR_AHA
+[`da3e148`](https://github.com/mikecjz/MR_AHA/tree/da3e148) on every GPU, on the synthetic
+presets. The NUFFT operator is `nufft_native` (`aha_nufft_plan`), with cufinufft 2.5.1 (Python)
+on the NVIDIA GPUs and mlx-nufft 0.3.3 on the M3 Ultra:
 
 ```bash
-python bench_aha.py --problem 2d 2d72 stack 3d --methods toeplitz nufft_c --mask both \
-    --cg 20 --setup-reps 3          # nufft_native instead of nufft_c on Apple silicon
+python bench_aha.py --problem 2d 2d72 stack 3d --methods toeplitz nufft_native --mask both \
+    --cg 20 --setup-reps 3
 ```
 
-The RTX 5090 tab was measured later with the same command and MR_AHA
-[`da3e148`](https://github.com/mikecjz/MR_AHA/tree/da3e148), built with
-`-DCMAKE_CUDA_ARCHITECTURES=120`.
-
-The `2d72` Toeplitz rows of one $A^H A$ and 20 CG iterations on the M3 Ultra were measured again
-with MR_AHA [`961f7ef`](https://github.com/mikecjz/MR_AHA/tree/961f7ef), which adds the tiled
-Metal kernels (`--problem 2d72 --methods toeplitz --mask both --cg 20`). Its set-up and NUFFT
-rows are from the run above.
+Each tab comes from a single run, so its Toeplitz and NUFFT rows were measured together. The
+NVIDIA runs also timed the library's own NUFFT operator (`--methods toeplitz nufft_c
+nufft_native`), which is not in the tables. It is faster than `aha_nufft_plan` on most problems
+(up to 2.7×, on the H100 `stack`), but slower in 3D on the RTX 5090 and the L40S and at rank 72
+on the L40S. The RTX 5090 library was built with `-DCMAKE_CUDA_ARCHITECTURES=120`.
 
 The accuracy table comes from the original study, which used measured human 2D radial and
 stack-of-stars data and a synthetic kooshball. Its scripts and raw numbers are in MR_AHA's
