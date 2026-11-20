@@ -17,7 +17,8 @@ The speed-up over the NUFFT operator on the same GPU is in parentheses. On four 
 |---|---|
 | [Single GPU](single-gpu.md) | Toeplitz against NUFFT: operator set-up, one $A^H A$ and 20 CG iterations, and their accuracy, on a TITAN RTX, an RTX 5090, an L40S, an H100 and an Apple M3 Ultra |
 | [Multi GPU](multi-gpu.md) | operator set-up, one $A^H A$ and 20 CG iterations on 1, 2 and 4 GPUs, on TITAN RTX, L40S and H100 nodes |
-| [Julia and BART](other-libraries.md) | MR_AHA against BART and MRISubspaceRecon.jl: one $A^H A$, 20 CG iterations, memory and accuracy, on a TITAN RTX, an L40S and an H100 |
+| [vs BART](vs-bart.md) | MR_AHA against BART: one $A^H A$, 20 CG iterations and accuracy, on a TITAN RTX, an L40S and an H100 |
+| [vs MRISubspaceRecon.jl](vs-mrisubspacerecon.md) | MR_AHA against MRISubspaceRecon.jl: one $A^H A$, 20 CG iterations and accuracy, on a TITAN RTX, an L40S and an H100 |
 
 ## Measure it yourself
 
