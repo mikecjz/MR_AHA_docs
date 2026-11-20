@@ -8,8 +8,8 @@ settings.
 ## Summary
 
 * **On the NVIDIA GPUs, Toeplitz is faster than NUFFT on every problem.** One $A^H A$ is 9–30×
-  faster for the small 2D problem, 3.6–6.1× at rank 72, 2.2–4.7× for stack-of-stars and
-  5.6–8.8× for the 3D kooshball. 20 CG iterations gain about as much, except on the small 2D
+  faster for the small 2D problem, 3.6–6.1× at rank 72, 2.1–4.7× for stack-of-stars and
+  5.0–8.8× for the 3D kooshball. 20 CG iterations gain about as much, except on the small 2D
   problem (8–19×).
 * **The NUFFT operator is ready at once; the Toeplitz operator first computes its kernel**, in
   1.6–4.7 s for the large problems on an H100 and up to 18.6 s (masked 3D on the TITAN RTX).
@@ -18,6 +18,10 @@ settings.
   sooner with Toeplitz.
 * **The fastest GPU is the H100**: 0.52 ms (`2d`), 33 ms (`2d72`), 0.17 s (`stack`) and 0.23 s
   (`3d`) per $A^H A$, and 4.7 s for 20 CG iterations in 3D.
+* **The RTX 5090 is the fastest on the small `2d` problem** (0.32 ms) and close to the H100 at
+  rank 72 (39 ms against 33 ms), but at about half the H100's memory bandwidth it takes about
+  twice as long for the stack-of-stars (0.31 s) and 3D (0.43 s) problems, between the H100 and
+  the L40S.
 * **On the Apple M3 Ultra, Toeplitz is also faster than NUFFT (mlx-nufft) on every problem**:
   7–47× per $A^H A$, and 5.8× on the high-rank `2d72` problem (182 ms against 1.06 s), where the
   tiled block-diagonal kernels for $L > 32$ run it at about the speed of a TITAN RTX. The stack
@@ -161,6 +165,45 @@ and of the small `2d` Toeplitz set-up.
 
 :::
 
+:::{tab-item} RTX 5090
+:sync: rtx5090
+
+NVIDIA GeForce RTX 5090, 32 GB (Blackwell, sm_120), driver 595.99 (CUDA 13.2), CUDA toolkit
+12.9, library built for `sm_120` only, cufinufft 2.6.0 (bundled with MR_AHA). The GPU also
+drives the workstation's display.
+
+**Operator set-up**
+
+| problem | NUFFT | Toeplitz | Toeplitz masked |
+|---|---:|---:|---:|
+| `2d` | **0.86 ms** | 4.17 ms | 4.18 ms |
+| `2d72` | **1.23 ms** | 0.91 s | 0.95 s |
+| `stack` | **1.24 ms** | 1.12 s | 1.04 s |
+| `3d` | **1.77 ms** | 2.39 s | 2.49 s |
+
+**One $A^H A$**
+
+| problem | NUFFT | Toeplitz | Toeplitz masked | Toeplitz speed-up |
+|---|---:|---:|---:|---:|
+| `2d` | 5.08 ms | **0.315 ms** | 0.324 ms | 16.1× |
+| `2d72` | 157 ms | 42.6 ms | **39.1 ms** | 4.0× |
+| `stack` | 661 ms | 323 ms | **312 ms** | 2.1× |
+| `3d` | 2.14 s | 0.54 s | **0.43 s** | 5.0× |
+
+**20 CG iterations**
+
+| problem | NUFFT | Toeplitz | Toeplitz masked | Toeplitz speed-up |
+|---|---:|---:|---:|---:|
+| `2d` | 103 ms | **7.61 ms** | 7.80 ms | 13.5× |
+| `2d72` | 3.14 s | 0.86 s | **0.79 s** | 4.0× |
+| `stack` | 13.34 s | 6.59 s | **6.37 s** | 2.1× |
+| `3d` | 42.88 s | 10.95 s | **8.69 s** | 4.9× |
+
+The unmasked 3D operator fits in 32 GB (24.0 GB in use), unlike on the 24 GB TITAN RTX. A
+repeated run gave the same $A^H A$ times to within 1 %.
+
+:::
+
 :::{tab-item} Apple M3 Ultra
 :sync: m3ultra
 
@@ -239,6 +282,10 @@ The runtime tables were measured with `bench_aha.py` of
 python bench_aha.py --problem 2d 2d72 stack 3d --methods toeplitz nufft_c --mask both \
     --cg 20 --setup-reps 3          # nufft_native instead of nufft_c on Apple silicon
 ```
+
+The RTX 5090 tab was measured later with the same command and MR_AHA
+[`da3e148`](https://github.com/mikecjz/MR_AHA/tree/da3e148), built with
+`-DCMAKE_CUDA_ARCHITECTURES=120`.
 
 The `2d72` Toeplitz rows of one $A^H A$ and 20 CG iterations on the M3 Ultra were measured again
 with MR_AHA [`961f7ef`](https://github.com/mikecjz/MR_AHA/tree/961f7ef), which adds the tiled
