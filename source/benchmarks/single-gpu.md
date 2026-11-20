@@ -91,6 +91,45 @@ masked one does.
 
 :::
 
+:::{tab-item} RTX 5090
+:sync: rtx5090
+
+NVIDIA GeForce RTX 5090, 32 GB (Blackwell, sm_120), driver 595.99 (CUDA 13.2), CUDA toolkit
+12.9, library built for `sm_120` only, cufinufft 2.6.0 (bundled with MR_AHA). The GPU also
+drives the workstation's display.
+
+**Operator set-up**
+
+| problem | NUFFT | Toeplitz | Toeplitz masked |
+|---|---:|---:|---:|
+| `2d` | **0.86 ms** | 4.17 ms | 4.18 ms |
+| `2d72` | **1.23 ms** | 0.91 s | 0.95 s |
+| `stack` | **1.24 ms** | 1.12 s | 1.04 s |
+| `3d` | **1.77 ms** | 2.39 s | 2.49 s |
+
+**One $A^H A$**
+
+| problem | NUFFT | Toeplitz | Toeplitz masked | Toeplitz speed-up |
+|---|---:|---:|---:|---:|
+| `2d` | 5.08 ms | **0.315 ms** | 0.324 ms | 16.1× |
+| `2d72` | 157 ms | 42.6 ms | **39.1 ms** | 4.0× |
+| `stack` | 661 ms | 323 ms | **312 ms** | 2.1× |
+| `3d` | 2.14 s | 0.54 s | **0.43 s** | 5.0× |
+
+**20 CG iterations**
+
+| problem | NUFFT | Toeplitz | Toeplitz masked | Toeplitz speed-up |
+|---|---:|---:|---:|---:|
+| `2d` | 103 ms | **7.61 ms** | 7.80 ms | 13.5× |
+| `2d72` | 3.14 s | 0.86 s | **0.79 s** | 4.0× |
+| `stack` | 13.34 s | 6.59 s | **6.37 s** | 2.1× |
+| `3d` | 42.88 s | 10.95 s | **8.69 s** | 4.9× |
+
+The unmasked 3D operator fits in 32 GB (24.0 GB in use), unlike on the 24 GB TITAN RTX. A
+repeated run gave the same $A^H A$ times to within 1 %.
+
+:::
+
 :::{tab-item} L40S
 :sync: l40s
 
@@ -162,45 +201,6 @@ NVIDIA H100 80GB (SXM, sm_90), CUDA 12.9, cufinufft 2.5.1.
 
 On this cluster every NUFFT plan creation costs 0.12–0.2 s, which is most of the NUFFT set-up
 and of the small `2d` Toeplitz set-up.
-
-:::
-
-:::{tab-item} RTX 5090
-:sync: rtx5090
-
-NVIDIA GeForce RTX 5090, 32 GB (Blackwell, sm_120), driver 595.99 (CUDA 13.2), CUDA toolkit
-12.9, library built for `sm_120` only, cufinufft 2.6.0 (bundled with MR_AHA). The GPU also
-drives the workstation's display.
-
-**Operator set-up**
-
-| problem | NUFFT | Toeplitz | Toeplitz masked |
-|---|---:|---:|---:|
-| `2d` | **0.86 ms** | 4.17 ms | 4.18 ms |
-| `2d72` | **1.23 ms** | 0.91 s | 0.95 s |
-| `stack` | **1.24 ms** | 1.12 s | 1.04 s |
-| `3d` | **1.77 ms** | 2.39 s | 2.49 s |
-
-**One $A^H A$**
-
-| problem | NUFFT | Toeplitz | Toeplitz masked | Toeplitz speed-up |
-|---|---:|---:|---:|---:|
-| `2d` | 5.08 ms | **0.315 ms** | 0.324 ms | 16.1× |
-| `2d72` | 157 ms | 42.6 ms | **39.1 ms** | 4.0× |
-| `stack` | 661 ms | 323 ms | **312 ms** | 2.1× |
-| `3d` | 2.14 s | 0.54 s | **0.43 s** | 5.0× |
-
-**20 CG iterations**
-
-| problem | NUFFT | Toeplitz | Toeplitz masked | Toeplitz speed-up |
-|---|---:|---:|---:|---:|
-| `2d` | 103 ms | **7.61 ms** | 7.80 ms | 13.5× |
-| `2d72` | 3.14 s | 0.86 s | **0.79 s** | 4.0× |
-| `stack` | 13.34 s | 6.59 s | **6.37 s** | 2.1× |
-| `3d` | 42.88 s | 10.95 s | **8.69 s** | 4.9× |
-
-The unmasked 3D operator fits in 32 GB (24.0 GB in use), unlike on the 24 GB TITAN RTX. A
-repeated run gave the same $A^H A$ times to within 1 %.
 
 :::
 
