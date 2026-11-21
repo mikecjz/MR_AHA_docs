@@ -21,7 +21,7 @@ The same study against MRISubspaceRecon.jl is on [MR_AHA vs MRISubspaceRecon.jl]
   treats a stack as a 3D problem oversampled along $z$ as well. MR_AHA's stack operator is
   5.7–6.0× faster.
 * **High rank.** At $L = 72$ MR_AHA is 7.7–7.8× faster, with its
-  [tiled kernels for ranks above 30](../background/performance.md#23-ranks-above-30-tiled-kernels).
+  [tiled kernels for ranks above 30](../background/performance.md#23-ranks-above-16-tiled-kernels).
   Before them, BART was 1.2× faster than MR_AHA on the H100.
 * **BART's full PSF computes the same operator** as MR_AHA, to $10^{-5}$ after a real scale.
   Its upper-triangular PSF is wrong for a complex temporal basis (see [Accuracy](#accuracy)).

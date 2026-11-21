@@ -2,7 +2,7 @@
 
 This note explains the design choices that make the CUDA backend fast: what each one does and why
 it saves time. It covers one application of the operator on one GPU ([§2](#2-one-gpu), with the kernels for
-ranks above 30 in [§2.3](#23-ranks-above-30-tiled-kernels)), multi-GPU ([§3.1](#31-decomposition-by-coil) to
+ranks above 16 in [§2.3](#23-ranks-above-16-tiled-kernels)), multi-GPU ([§3.1](#31-decomposition-by-coil) to
 [§3.3](#33-robustness)), the multi-GPU set-up of the Toeplitz kernel ([§3.4](#34-set-up-computing-phi2_toep-on-all-gpus)) and the NUFFT method ([§3.5](#35-the-nufft-method-of-the-operator)).
 
 * For a short summary, read [Implementation notes](implementation.md).
@@ -23,7 +23,7 @@ The gains at a glance, for 12 coils and $L = 12$:
 | 3D kooshball 160³, $L = 12$ | 12.1 s | 4.3 s |
 | 2D radial 320², $L = 72$ | 3.7 s | 1.9 s |
 
-| one $A^H A$, 2D radial 320², $L = 72$, 12 coils | generic kernels | optimized kernels (tiled, [§2.3](#23-ranks-above-30-tiled-kernels)) |
+| one $A^H A$, 2D radial 320², $L = 72$, 12 coils | generic kernels | optimized kernels (tiled, [§2.3](#23-ranks-above-16-tiled-kernels)) |
 |---|---|---|
 | one H100 | 335 ms | 36 ms |
 | one L40S | 309 ms | 90 ms |
@@ -93,7 +93,7 @@ and 4).
 ### 2.2 Kernels specialized on $L$: everything in registers
 
 The kernels `mr_k_bd_dense_t<L, PAIR>` and `mr_k_bd_masked_t<L, PAIR>` (`src/cuda/mr_kernels_bd.cu`)
-are templates on the rank. They are instantiated for $L = 1 \ldots 30$ and selected at plan
+are templates on the rank. They are instantiated for $L = 1 \ldots 16$ and selected at plan
 creation through a `switch` (`mr_bd_lookup`). With $L$ a compile-time constant:
 
 - every loop is fully unrolled;
@@ -112,14 +112,30 @@ At $L = 12$ with a coil pair the kernel uses 206 of the 255 registers (`-Xptxas 
 nothing spills to local memory. Keeping the kernel out of local memory is worth 16 % of the
 block-diagonal stage (TITAN RTX, stack problem).
 
-**Range of $L$.** Up to $L = 30$ (`MR_BD_MAX_L`), one coil's two vectors ($4L$ registers) plus
-addressing fit in the register file. Larger ranks use the tiled kernels of [§2.3](#23-ranks-above-30-tiled-kernels), which keep the
-vectors in shared memory instead.
+**Range of $L$.** The specialized kernels run up to $L = 16$ (`MR_BD_MAX_L`), and every one of
+them processes coils in pairs (`MR_BD_PAIR_MAX_L` is also 16). Larger ranks use the tiled kernels
+of [§2.3](#23-ranks-above-16-tiled-kernels), which keep the vectors in shared memory instead.
+One coil's two vectors ($4L$ registers) plus addressing would fit in the register file up to
+about $L = 30$, but the tiled kernels are faster well before that. A sweep of $L = 1 \ldots 32$
+compared the two families on the whole $A^H A$ (2D radial, 384² with 8 coils and 256² with
+16 coils, masked and unmasked):
 
-### 2.3 Ranks above 30: tiled kernels
+| GPU | tiled kernels faster from |
+|---|---|
+| TITAN RTX, RTX 5090 | $L \approx 9$–11 |
+| L40S | $L = 18$ (tied from 6 to 17) |
+| A100, H100 | $L = 17$–18 |
 
-Above $L = 30$ the rank vectors of one location no longer fit in registers, so the specialized
-kernels of [§2.2](#22-kernels-specialized-on--everything-in-registers) stop there. Ranks from 31 to 512 (`MR_BDT_MAX_L`) use the tiled kernels
+From $L = 17$ the specialized kernels can no longer pair coils, and from $L = 18$ they lose on
+every GPU, by 1.7–2.7× at $L = 30$. A limit of 16 is within 18 % of the best per-GPU choice on all of them. On the
+H100 a limit of 10 would cost up to 28 %. `MR_AHA_CUDA_TILED_BD=1` forces the tiled kernels at
+every rank.
+
+### 2.3 Ranks above 16: tiled kernels
+
+The specialized kernels of [§2.2](#22-kernels-specialized-on--everything-in-registers) stop at $L = 16$, and above about
+$L = 30$ the rank vectors of one location would no longer fit in registers at all. Ranks from 17
+to 512 (`MR_BDT_MAX_L`) use the tiled kernels
 `mr_k_bdt<NC, OPT, MASKED>` (`src/cuda/mr_kernels_bdt.cu`). They follow the same three rules as
 the specialized kernels, with shared memory where those use registers.
 
@@ -502,10 +518,10 @@ few milliseconds. For comparison, the Toeplitz method applies the 2D 320², $L =
 The tests are described in [Testing](../development/testing.md). The checks behind this note:
 
 - **Specialized and tiled against generic kernels.** `tests/check_bd_kernels.py` applies the
-  operator with the optimized kernels and with the generic ones for 14 ranks from 1 to 130, both
+  operator with the optimized kernels and with the generic ones for 16 ranks from 1 to 130, both
   triangles, masked and unmasked, with coil groups of 1, 2 and 4. It also forces the tiled
-  kernels at every rank, with coil batches of 1, 2 and 4. All 504 combinations agree to
-  single-precision rounding (worst relative difference 2.8·10⁻⁷).
+  kernels at every rank, with coil batches of 1, 2 and 4. All 576 combinations agree to
+  single-precision rounding.
 - **Reference data.** `tests/check_reference.py` and `tests/check_reference_matlab.m` compare
   every public function with stored results.
 - **Multi-GPU against single-GPU.** `tests/check_op.py` and `tests/check_op_matlab.m` cover 2D, stack

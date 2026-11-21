@@ -64,11 +64,11 @@ grid point is Hermitian: twice the entries that are needed.
 ### MR_AHA: one thread per grid point, the vector in registers
 
 MR_AHA's block-diagonal kernel (`mr_k_bd_dense_t<L>`, `src/cuda/mr_kernels_bd.cu`) is compiled
-separately for every rank from 1 to 30 (larger ranks use a generic block kernel). One thread
+separately for every rank from 1 to 16 (larger ranks use a tiled block kernel). One thread
 handles one grid point. It loads that point's $L$
 coefficients of a coil into registers once, walks the packed upper triangle of the kernel once,
 applying each entry $a$ to both $y_c \mathrel{+}= a\,v_r$ and $y_r \mathrel{+}= \bar a\,v_c$, and
-writes the $L$ results once. For $L \le 16$ it processes two coils per walk of the triangle, so
+writes the $L$ results once. It processes two coils per walk of the triangle, so
 the kernel is read once for both.
 
 Per grid point and coil this moves $(L^2 + L)/2$ kernel entries and $2L$ coefficients, about

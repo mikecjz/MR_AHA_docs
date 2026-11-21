@@ -24,7 +24,7 @@ settings.
   the L40S.
 * **On the Apple M3 Ultra, Toeplitz is also faster than NUFFT (mlx-nufft) on every problem**:
   7–47× per $A^H A$, and 5.8× on the high-rank `2d72` problem (182 ms against 1.06 s), where the
-  tiled block-diagonal kernels for $L > 32$ run it at about the speed of a TITAN RTX. The stack
+  tiled block-diagonal kernels for $L > 5$ run it at about the speed of a TITAN RTX. The stack
   and 3D problems run at about the speed of an L40S (0.89 s for the stack, 1.10 s in 3D).
 * **Both operators compute the same thing**: they agree to 1–4·10⁻⁶ per application, and the
   20-iteration CG solutions to 3–6·10⁻⁶ (see [Accuracy](#accuracy)).
@@ -237,7 +237,7 @@ mlx-nufft; `calc_toep` uses mlx-nufft and finishes in the library.
 | `stack` | 126.7 s | **18.88 s** | 20.01 s | 6.7× |
 | `3d` | 398.3 s | 25.60 s | **23.82 s** | 16.7× |
 
-The `2d72` Toeplitz rows of $A^H A$ and CG use the tiled block-diagonal kernels for $L > 32$
+The `2d72` Toeplitz rows of $A^H A$ and CG use the tiled block-diagonal kernels for $L > 5$
 (see [Apple silicon](../guide/apple-silicon.md#performance)). Before them, the masked operator
 took 1.19 s per $A^H A$ and 24.19 s for 20 CG iterations, slower than NUFFT. The CG vector
 updates run on the CPU. The `2d` problem is too small to occupy the GPU.
